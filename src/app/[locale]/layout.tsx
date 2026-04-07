@@ -39,10 +39,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className="scroll-smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
+      <head />
       <body className="bg-[#080808] text-[#F5F0E8] overflow-x-hidden">
         <NextIntlClientProvider messages={messages}>
           <CartProvider>
