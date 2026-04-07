@@ -1,26 +1,143 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&display=swap");
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-black: #080808;
+  --color-black-rich: #050505;
+  --color-gold: #C9A84C;
+  --color-gold-light: #E2C98A;
+  --color-gold-dark: #9B7A2E;
+  --color-gold-muted: rgba(201, 168, 76, 0.3);
+  --color-cream: #F5F0E8;
+  --color-ivory: #FAF7F2;
+  --color-white-15: rgba(255,255,255,0.15);
+  --color-white-5: rgba(255,255,255,0.05);
+
+  --font-cinzel: "Cinzel", serif;
+  --font-cormorant: "Cormorant Garamond", serif;
+
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-shimmer: shimmer 3s linear infinite;
+  --animate-pulse-gold: pulse-gold 2s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.7s ease forwards;
+  --animate-marquee: marquee 30s linear infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-12px) rotate(1deg); }
+  66% { transform: translateY(-6px) rotate(-0.5deg); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(201, 168, 76, 0.3); }
+  50% { opacity: 0.8; box-shadow: 0 0 40px rgba(201, 168, 76, 0.6); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #080808;
+  color: #F5F0E8;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 18px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Gold grid texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #080808;
+}
+::-webkit-scrollbar-thumb {
+  background: #C9A84C;
+  border-radius: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(201,168,76,0.3);
+  color: #F5F0E8;
+}
+
+/* Typography utilities */
+.font-cinzel { font-family: "Cinzel", serif; }
+.font-cormorant { font-family: "Cormorant Garamond", serif; }
+
+.text-gold { color: #C9A84C; }
+.text-gold-light { color: #E2C98A; }
+.border-gold { border-color: #C9A84C; }
+.bg-gold { background-color: #C9A84C; }
+
+.gold-gradient {
+  background: linear-gradient(135deg, #C9A84C 0%, #E2C98A 50%, #9B7A2E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gold-shimmer {
+  background: linear-gradient(90deg, #9B7A2E 0%, #E2C98A 25%, #C9A84C 50%, #E2C98A 75%, #9B7A2E 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Luxury card base */
+.luxury-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(201,168,76,0.15);
+  backdrop-filter: blur(10px);
+}
+
+/* Page transition */
+.page-transition {
+  animation: fade-up 0.6s ease forwards;
+}
+
+/* Overflow hidden helper for sections */
+.section-overflow {
+  overflow: hidden;
+  position: relative;
 }

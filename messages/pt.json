@@ -1,0 +1,148 @@
+{
+  "nav": {
+    "home": "Início",
+    "shop": "Loja",
+    "about": "Sobre",
+    "contact": "Contacto",
+    "cart": "Carrinho"
+  },
+  "hero": {
+    "eyebrow": "Maison de Parfum",
+    "headline": "O aroma do poder.",
+    "sub": "Perfumaria árabe e oriental de luxo, criada para quem comanda uma presença.",
+    "cta": "Comprar Agora",
+    "scroll": "Scroll para explorar"
+  },
+  "brand": {
+    "title": "Nascida do Oriente",
+    "description": "Mushy Parfum é uma homenagem à arte ancestral da perfumaria árabe — onde os ingredientes são sagrados, o artesanato é devoção e cada frasco conta uma história que vale a pena contar."
+  },
+  "featured": {
+    "title": "A Coleção",
+    "subtitle": "Criada à mão para quem deixa um rasto."
+  },
+  "marquee": {
+    "items": ["OUD", "ÂMBAR", "AÇAFRÃO", "ROSA", "BAKHOOR", "SÂNDALO", "ALMÍSCAR", "INCENSO", "COURO", "VETIVER"]
+  },
+  "shop": {
+    "title": "A Coleção",
+    "subtitle": "Vinte expressões de luxo.",
+    "filter": "Filtrar",
+    "all": "Todos",
+    "masculine": "Masculino",
+    "feminine": "Feminino",
+    "unisex": "Unissexo",
+    "oud": "Oud",
+    "floral": "Floral",
+    "amber": "Âmbar",
+    "oriental": "Oriental",
+    "woody": "Amadeirado",
+    "citrus": "Cítrico",
+    "fresh": "Fresco",
+    "sortBy": "Ordenar por",
+    "featured": "Destaques",
+    "priceAsc": "Preço: Menor para Maior",
+    "priceDesc": "Preço: Maior para Menor",
+    "name": "Nome",
+    "buyNow": "Comprar",
+    "viewDetails": "Ver Detalhes",
+    "new": "Novo",
+    "bestseller": "Mais Vendido",
+    "noResults": "Nenhuma fragrância encontrada."
+  },
+  "product": {
+    "topNotes": "Notas de Saída",
+    "heartNotes": "Notas de Coração",
+    "baseNotes": "Notas de Fundo",
+    "notesTitle": "Notas Olfativas",
+    "performance": "Performance",
+    "longevity": "Longevidade",
+    "sillage": "Esteira",
+    "projection": "Projeção",
+    "onClothes": "Fica nas Roupas",
+    "compliments": "Elogios",
+    "seduction": "Pontuação de Sedução",
+    "hours": "horas",
+    "size": "Tamanho",
+    "quantity": "Quantidade",
+    "addToCart": "Adicionar ao Carrinho",
+    "buyNow": "Comprar Agora",
+    "limitedStock": "Edição limitada · Sem reposição",
+    "inStock": "Em Stock",
+    "outOfStock": "Esgotado",
+    "relatedTitle": "Também pode amar"
+  },
+  "about": {
+    "title": "A Nossa História",
+    "subtitle": "Onde o Oriente encontra a eternidade.",
+    "story1": "Mushy Parfum nasceu de uma profunda reverência pela perfumaria árabe — uma forma de arte com milhares de anos, enraizada nas rotas de especiarias do mundo antigo.",
+    "story2": "Acreditamos que o perfume não é decoração. É identidade. É memória. É a assinatura invisível que deixas em cada sala que entras e em cada pessoa que encontras.",
+    "story3": "As nossas fragrâncias são compostas com os melhores ingredientes de todo o mundo árabe — olíbano de Omã, oud cambodjano, açafrão iraniano e absoluto de rosa búlgara — porque o luxo não é uma etiqueta. É um padrão.",
+    "missionTitle": "Missão",
+    "mission": "Levar a alma da perfumaria oriental ao mundo, sem compromisso, sem desculpas.",
+    "visionTitle": "Visão",
+    "vision": "Um mundo onde cada pessoa pode carregar o poder do luxo oriental onde quer que vá."
+  },
+  "contact": {
+    "title": "Contacta-nos",
+    "subtitle": "Estamos aqui para guiar a tua jornada.",
+    "whatsapp": "Mensagem via WhatsApp",
+    "instagram": "Seguir no Instagram",
+    "email": "Envia-nos uma mensagem",
+    "name": "O teu Nome",
+    "emailField": "O teu Email",
+    "message": "A tua Mensagem",
+    "send": "Enviar Mensagem",
+    "sending": "A enviar...",
+    "success": "Mensagem enviada! Entraremos em contacto em breve.",
+    "error": "Algo correu mal. Por favor tenta novamente."
+  },
+  "checkout": {
+    "title": "Checkout",
+    "orderSummary": "Resumo da Encomenda",
+    "paymentMethod": "Método de Pagamento",
+    "card": "Cartão de Crédito / Débito",
+    "mbway": "MB Way",
+    "cardNumber": "Número do Cartão",
+    "expiry": "Validade",
+    "cvc": "CVC",
+    "cardName": "Nome no Cartão",
+    "phone": "Número MB Way",
+    "pay": "Finalizar Compra",
+    "paying": "A processar...",
+    "demo": "Demo. Usa o cartão de teste 4242 4242 4242 4242.",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "shipping": "Envio",
+    "free": "Grátis",
+    "mbwayInstructions": "Abre a app MB Way e aprova o pedido de pagamento.",
+    "mbwayTimer": "O pedido de pagamento expira em",
+    "back": "Voltar ao Carrinho"
+  },
+  "success": {
+    "title": "Encomenda Confirmada",
+    "subtitle": "O teu luxo está a caminho.",
+    "message": "A tua encomenda foi efetuada com sucesso. Uma confirmação será enviada para o teu email.",
+    "orderRef": "Referência da Encomenda",
+    "continueShopping": "Continuar a Comprar",
+    "home": "Voltar ao Início"
+  },
+  "cart": {
+    "title": "O Teu Carrinho",
+    "empty": "O teu carrinho está vazio.",
+    "emptySubtitle": "Descobre a nossa coleção.",
+    "explore": "Explorar Coleção",
+    "remove": "Remover",
+    "total": "Total",
+    "checkout": "Finalizar Compra"
+  },
+  "footer": {
+    "tagline": "O aroma do poder.",
+    "rights": "Todos os direitos reservados.",
+    "navigation": "Navegação",
+    "legal": "Legal",
+    "privacy": "Política de Privacidade",
+    "terms": "Termos de Serviço",
+    "followUs": "Segue-nos"
+  }
+}
