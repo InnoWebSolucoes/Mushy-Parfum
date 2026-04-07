@@ -1,18 +1,19 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
+// Fixed seed values to avoid SSR/client hydration mismatch
 const PARTICLES = Array.from({ length: 20 }, (_, i) => ({
   id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  size: Math.random() * 3 + 1,
-  duration: Math.random() * 4 + 3,
-  delay: Math.random() * 3,
+  x: [98, 29, 59, 78, 22, 91, 32, 40, 38, 82, 59, 10, 17, 28, 93, 95, 34, 58, 72, 81][i],
+  y: [10, 25, 39, 15, 90, 13, 62, 41, 64, 64, 40, 75, 63, 7, 43, 28, 16, 31, 65, 10][i],
+  size: [3, 2.4, 1.3, 3.7, 1.8, 1.1, 1.9, 3.0, 1.8, 2.5, 1.1, 2.9, 2.4, 3.0, 1.4, 3.8, 2.1, 2.7, 3.8, 1.4][i],
+  duration: [4, 5, 6, 3.5, 7, 4.5, 5.5, 3, 6.5, 4, 5, 7, 3.5, 6, 4.5, 5, 6.5, 3, 7, 4][i],
+  delay: [0, 0.5, 1, 1.5, 2, 2.5, 0.3, 0.8, 1.3, 1.8, 2.3, 0.2, 0.7, 1.2, 1.7, 2.2, 0.4, 0.9, 1.4, 1.9][i],
 }));
 
 export default function HeroSection() {
@@ -192,22 +193,20 @@ export default function HeroSection() {
           </div>
 
           {/* Mist particles around bottle */}
-          {[...Array(6)].map((_, i) => (
+          {[
+            { w: 18, h: 22, l: 25, t: 68, d: 3.5 },
+            { w: 28, h: 14, l: 45, t: 72, d: 4.2 },
+            { w: 12, h: 19, l: 60, t: 65, d: 3.8 },
+            { w: 22, h: 16, l: 35, t: 78, d: 5.0 },
+            { w: 16, h: 25, l: 70, t: 70, d: 4.5 },
+            { w: 20, h: 18, l: 50, t: 75, d: 3.2 },
+          ].map((p, i) => (
             <motion.div
               key={i}
               className="absolute rounded-full bg-[#C9A84C]/20 blur-md"
-              style={{
-                width: Math.random() * 20 + 10,
-                height: Math.random() * 20 + 10,
-                left: `${20 + Math.random() * 60}%`,
-                top: `${60 + Math.random() * 30}%`,
-              }}
+              style={{ width: p.w, height: p.h, left: `${p.l}%`, top: `${p.t}%` }}
               animate={{ opacity: [0, 0.4, 0], scale: [0.5, 1.5, 0.5], y: [0, -30, -60] }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                delay: i * 0.5,
-                repeat: Infinity,
-              }}
+              transition={{ duration: p.d, delay: i * 0.5, repeat: Infinity }}
             />
           ))}
         </motion.div>

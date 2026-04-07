@@ -45,25 +45,29 @@ export default function ProductHero({ product }: { product: Product }) {
 
       {/* Floating particles */}
       <div className="absolute inset-0 pointer-events-none">
-        {Array.from({ length: 15 }).map((_, i) => (
+        {[
+          { l: 15, t: 20, w: 2.5, d: 4, delay: 0 },
+          { l: 35, t: 45, w: 1.5, d: 5, delay: 0.3 },
+          { l: 60, t: 15, w: 3, d: 3.5, delay: 0.7 },
+          { l: 80, t: 60, w: 2, d: 6, delay: 1.1 },
+          { l: 25, t: 75, w: 1, d: 4.5, delay: 0.5 },
+          { l: 70, t: 35, w: 2.8, d: 5.5, delay: 0.9 },
+          { l: 45, t: 55, w: 1.8, d: 3, delay: 1.4 },
+          { l: 88, t: 25, w: 2.2, d: 4, delay: 0.2 },
+          { l: 12, t: 65, w: 3, d: 5, delay: 1.6 },
+          { l: 55, t: 80, w: 1.5, d: 6, delay: 0.8 },
+          { l: 30, t: 30, w: 2, d: 4.5, delay: 1.2 },
+          { l: 75, t: 70, w: 1, d: 3.5, delay: 0.4 },
+          { l: 50, t: 12, w: 2.5, d: 5, delay: 1.0 },
+          { l: 20, t: 50, w: 3, d: 4, delay: 1.8 },
+          { l: 90, t: 45, w: 1.8, d: 5.5, delay: 0.6 },
+        ].map((p, i) => (
           <motion.div
             key={i}
             className="absolute rounded-full"
-            style={{
-              left: `${10 + Math.random() * 80}%`,
-              top: `${10 + Math.random() * 80}%`,
-              width: Math.random() * 3 + 1,
-              height: Math.random() * 3 + 1,
-              backgroundColor: product.accentColor,
-              opacity: 0.4,
-            }}
+            style={{ left: `${p.l}%`, top: `${p.t}%`, width: p.w, height: p.w, backgroundColor: product.accentColor, opacity: 0.4 }}
             animate={{ y: [0, -20, 0], opacity: [0.1, 0.5, 0.1] }}
-            transition={{
-              duration: 3 + Math.random() * 3,
-              delay: Math.random() * 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            transition={{ duration: p.d, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
           />
         ))}
       </div>
@@ -176,20 +180,19 @@ export default function ProductHero({ product }: { product: Product }) {
               />
             </div>
             {/* Mist */}
-            {Array.from({ length: 5 }).map((_, i) => (
+            {[
+              { w: 25, h: 18, l: 28, t: 70, d: 3.2 },
+              { w: 18, h: 22, l: 50, t: 75, d: 4.0 },
+              { w: 30, h: 16, l: 65, t: 68, d: 3.6 },
+              { w: 20, h: 28, l: 38, t: 78, d: 4.5 },
+              { w: 22, h: 20, l: 55, t: 72, d: 3.8 },
+            ].map((p, i) => (
               <motion.div
                 key={i}
                 className="absolute rounded-full blur-md"
-                style={{
-                  width: 15 + Math.random() * 20,
-                  height: 15 + Math.random() * 20,
-                  left: `${20 + Math.random() * 60}%`,
-                  top: `${65 + Math.random() * 25}%`,
-                  backgroundColor: product.accentColor,
-                  opacity: 0.3,
-                }}
+                style={{ width: p.w, height: p.h, left: `${p.l}%`, top: `${p.t}%`, backgroundColor: product.accentColor, opacity: 0.3 }}
                 animate={{ opacity: [0, 0.3, 0], scale: [0.5, 1.5, 0.5], y: [0, -40] }}
-                transition={{ duration: 2.5 + Math.random() * 2, delay: i * 0.6, repeat: Infinity }}
+                transition={{ duration: p.d, delay: i * 0.6, repeat: Infinity }}
               />
             ))}
           </motion.div>
