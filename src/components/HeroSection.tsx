@@ -8,27 +8,27 @@ import Image from "next/image";
 // ─────────────────────────────────────────────────────────────────
 const TOTAL_FRAMES = 150;
 const FRAME_URL    = (n: number) =>
-  `/frames/${String(n).padStart(3, "0")}.png`;
+  `/frames/${String(n).padStart(3, "0")}.jpg`;
 // ─────────────────────────────────────────────────────────────────
 
-const FADE_START  = 0.78;
-const FADE_FINISH = 0.96;
+const FADE_START       = 0.78;
+const FADE_FINISH      = 0.96;
+const TEXT_FADE_END    = 0.05; // intro text fully gone by 5% scroll progress
 
 export default function HeroSection() {
-  const heroRef    = useRef<HTMLElement>(null);
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
-  const seeMoreRef = useRef<HTMLButtonElement>(null);
-  const logoRef    = useRef<HTMLDivElement>(null);
+  const heroRef        = useRef<HTMLElement>(null);
+  const canvasRef      = useRef<HTMLCanvasElement>(null);
+  const menuBtnRef     = useRef<HTMLButtonElement>(null);
+  const seeMoreRef     = useRef<HTMLButtonElement>(null);
+  const logoRef        = useRef<HTMLDivElement>(null);
+  const introRef       = useRef<HTMLDivElement>(null);
 
-  // Frames array and load tracking (refs = no re-render on update)
-  const framesRef     = useRef<HTMLImageElement[]>([]);
-  const loadedRef     = useRef(0);
-  const currentIdxRef = useRef(0); // track active frame for resize redraws
+  const framesRef      = useRef<HTMLImageElement[]>([]);
+  const loadedRef      = useRef(0);
+  const currentIdxRef  = useRef(0);
 
-  const [loadPct,  setLoadPct]  = useState(0);    // 0-100 for progress bar
-  const [ready,    setReady]    = useState(false); // all frames loaded
-
+  const [loadPct, setLoadPct] = useState(0);
+  const [ready,   setReady]   = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   // ── Cover-fit canvas draw ──────────────────────────────────────
@@ -54,23 +54,17 @@ export default function HeroSection() {
 
     for (let i = 0; i < TOTAL_FRAMES; i++) {
       const img = new window.Image();
-      img.src = FRAME_URL(i + 1);   // frames are 1-indexed
+      img.src = FRAME_URL(i + 1);
 
       img.onload = () => {
         loadedRef.current += 1;
         const pct = Math.round((loadedRef.current / TOTAL_FRAMES) * 100);
         setLoadPct(pct);
-
-        // Draw the very first frame as soon as it arrives
         if (i === 0) drawFrame(img);
-
-        if (loadedRef.current === TOTAL_FRAMES) {
-          setReady(true);
-        }
+        if (loadedRef.current === TOTAL_FRAMES) setReady(true);
       };
 
       img.onerror = () => {
-        // Count failed loads so the bar still completes
         loadedRef.current += 1;
         const pct = Math.round((loadedRef.current / TOTAL_FRAMES) * 100);
         setLoadPct(pct);
@@ -82,17 +76,16 @@ export default function HeroSection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Canvas resize ──────────────────────────────────────────────
+  // ── Canvas resize — only on width change (ignores mobile toolbar) ─
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const resize = () => {
+      if (window.innerWidth === canvas.width) return; // height-only = toolbar, skip
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
-      // Redraw whichever frame is currently active (not always frame 0)
-      const frames = framesRef.current;
-      const f = frames[currentIdxRef.current];
+      const f = framesRef.current[currentIdxRef.current];
       if (f?.complete && f.naturalWidth) drawFrame(f);
     };
 
@@ -100,6 +93,15 @@ export default function HeroSection() {
     window.addEventListener("resize", resize, { passive: true });
     return () => window.removeEventListener("resize", resize);
   }, [drawFrame]);
+
+  // ── Fade intro text in once loading completes ──────────────────
+  useEffect(() => {
+    if (!ready) return;
+    const el = introRef.current;
+    if (!el) return;
+    el.style.transition = "opacity 1.4s ease";
+    requestAnimationFrame(() => { el.style.opacity = "1"; });
+  }, [ready]);
 
   // ── Scroll → frame index + UI opacity ─────────────────────────
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function HeroSection() {
         ? Math.max(0, Math.min(window.scrollY / range, 1))
         : 0;
 
-      // Draw the correct frame — synchronous, instant
+      // Advance frame
       const idx = Math.min(
         Math.floor(progress * TOTAL_FRAMES),
         TOTAL_FRAMES - 1
@@ -123,7 +125,14 @@ export default function HeroSection() {
       const frame = framesRef.current[idx];
       if (frame) drawFrame(frame);
 
-      // UI opacity — direct DOM, zero React re-renders
+      // Intro text — fades out as soon as user scrolls
+      if (introRef.current && window.scrollY > 0) {
+        const textOp = Math.max(0, 1 - progress / TEXT_FADE_END);
+        introRef.current.style.transition = "";
+        introRef.current.style.opacity = String(textOp);
+      }
+
+      // UI elements (logo, menu btn, see more) fade in near end
       const rawOp = progress >= FADE_START
         ? (progress - FADE_START) / (FADE_FINISH - FADE_START)
         : 0;
@@ -144,7 +153,7 @@ export default function HeroSection() {
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll(); // run once to paint frame 0 at initial position
+    onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, [ready, drawFrame]);
 
@@ -167,14 +176,14 @@ export default function HeroSection() {
       <section ref={heroRef} style={{ height: "500vh" }} className="relative">
         <div className="sticky top-0 overflow-hidden" style={{ height: "100svh" }}>
 
-          {/* Canvas — the visible surface, painted from pre-loaded frames */}
+          {/* Canvas */}
           <canvas
             ref={canvasRef}
             className="absolute inset-0"
             style={{ width: "100%", height: "100%", display: "block" }}
           />
 
-          {/* Loading overlay — fades out once all frames are ready */}
+          {/* Loading overlay */}
           <div
             className="absolute inset-0 z-40 flex flex-col items-center justify-center"
             style={{
@@ -184,7 +193,6 @@ export default function HeroSection() {
               transition: "opacity 0.8s ease",
             }}
           >
-            {/* Gold progress bar */}
             <div
               className="relative overflow-hidden rounded-full"
               style={{ width: 160, height: 1, background: "rgba(201,168,76,0.2)" }}
@@ -221,6 +229,68 @@ export default function HeroSection() {
               ].join(","),
             }}
           />
+
+          {/* ── Intro text overlay ── */}
+          <div
+            ref={introRef}
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none"
+            style={{ opacity: 0 }}
+          >
+            <p
+              className="font-cinzel"
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.45em",
+                color: "#8B7355",
+                marginBottom: "1.5rem",
+                textTransform: "uppercase",
+              }}
+            >
+              The House of
+            </p>
+            <h1
+              className="font-cormorant"
+              style={{
+                fontSize: "clamp(44px, 12vw, 64px)",
+                fontWeight: 300,
+                letterSpacing: "-0.01em",
+                color: "#F5F0E8",
+                lineHeight: 1,
+                textShadow: "0 2px 40px rgba(0,0,0,0.7)",
+              }}
+            >
+              Mushy Parfum
+            </h1>
+            <div
+              style={{
+                marginTop: "3.5rem",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "0.75rem",
+              }}
+            >
+              <span
+                className="font-cinzel"
+                style={{
+                  fontSize: 9,
+                  letterSpacing: "0.35em",
+                  color: "rgba(245,240,232,0.45)",
+                  textTransform: "uppercase",
+                  animation: "pulse-fade 2.5s ease-in-out infinite",
+                }}
+              >
+                Scroll to discover
+              </span>
+              <span
+                className="block w-px h-8"
+                style={{
+                  background: "linear-gradient(to bottom, #C9A84C, transparent)",
+                  animation: "pulse-line 2.5s ease-in-out infinite",
+                }}
+              />
+            </div>
+          </div>
 
           {/* Logo */}
           <div

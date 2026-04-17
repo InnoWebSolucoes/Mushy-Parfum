@@ -26,3 +26,8 @@ body {
   0%, 100% { opacity: 0.6; transform: scaleY(1); }
   50%       { opacity: 1;   transform: scaleY(1.15); }
 }
+
+@keyframes pulse-fade {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.75; }
+}
