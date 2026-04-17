@@ -3,17 +3,8 @@
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 
-// Lerp factor: how fast the video chases the scroll position.
-// Higher = more responsive but less dreamy.  Lower = smoother but laggy.
-const LERP = 0.12;
-
-// Max seek rate — give the decoder ~33 ms between seeks (≈30 fps seeking).
-// RAF still runs at 60 fps; we just don't queue a new seek until the
-// previous one has had time to finish.
-const SEEK_INTERVAL_MS = 33;
-
-const FADE_START  = 0.78;
-const FADE_FINISH = 0.96;
+const FADE_START  = 0.78;   // video progress at which UI starts appearing
+const FADE_FINISH = 0.96;   // video progress at which UI is fully visible
 
 export default function HeroSection() {
   const heroRef    = useRef<HTMLElement>(null);
@@ -22,57 +13,30 @@ export default function HeroSection() {
   const seeMoreRef = useRef<HTMLButtonElement>(null);
   const logoRef    = useRef<HTMLDivElement>(null);
 
-  // All hot-path state lives in refs — zero React re-renders per frame
-  const targetRef   = useRef(0);
-  const smoothRef   = useRef(0);
-  const lastSeekMs  = useRef(0);   // timestamp of most-recent seek
-  const rafRef      = useRef(0);
-
+  const started    = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
-    const hero  = heroRef.current;
-    if (!video || !hero) return;
+    if (!video) return;
 
-    // ── Scroll → raw target (never touches DOM) ─────────────────
-    const onScroll = () => {
-      const range = hero.offsetHeight - window.innerHeight;
-      targetRef.current = range > 0
-        ? Math.max(0, Math.min(window.scrollY / range, 1))
-        : 0;
+    // ── Start playing on first downward scroll ────────────────
+    const startVideo = () => {
+      if (started.current) return;
+      started.current = true;
+      video.play().catch(() => {});
+      window.removeEventListener("scroll", startVideo);
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", startVideo, { passive: true });
 
-    // ── RAF loop ─────────────────────────────────────────────────
-    const tick = (timestamp: number) => {
-      // 1. Lerp smoothed progress toward scroll target
-      const target = targetRef.current;
-      const prev   = smoothRef.current;
-      const next   = Math.abs(target - prev) < 0.00005
-        ? target
-        : prev + (target - prev) * LERP;
-      smoothRef.current = next;
+    // ── Fade UI in based on video progress (timeupdate) ───────
+    // timeupdate fires ~4-66 times/sec — plenty for opacity fades
+    const onTimeUpdate = () => {
+      if (!video.duration) return;
+      const p = video.currentTime / video.duration;
 
-      // 2. Seek — only when:
-      //    • metadata is ready (we know the duration)
-      //    • enough time has passed since the last seek
-      //    • the desired position has actually moved
-      if (
-        video.readyState >= 1 &&
-        video.duration &&
-        timestamp - lastSeekMs.current >= SEEK_INTERVAL_MS
-      ) {
-        const wanted = next * video.duration;
-        if (Math.abs(video.currentTime - wanted) > 0.01) {
-          video.currentTime = wanted;
-          lastSeekMs.current = timestamp;
-        }
-      }
-
-      // 3. UI opacity — direct DOM, no React state
-      const rawOp = next >= FADE_START
-        ? (next - FADE_START) / (FADE_FINISH - FADE_START)
+      const rawOp = p >= FADE_START
+        ? (p - FADE_START) / (FADE_FINISH - FADE_START)
         : 0;
       const op = String(Math.min(rawOp, 1));
       const pe = parseFloat(op) > 0.4 ? "auto" : "none";
@@ -88,15 +52,24 @@ export default function HeroSection() {
       if (logoRef.current) {
         logoRef.current.style.opacity = op;
       }
-
-      rafRef.current = requestAnimationFrame(tick);
     };
+    video.addEventListener("timeupdate", onTimeUpdate);
 
-    rafRef.current = requestAnimationFrame(tick);
+    // Ensure fully visible once video ends
+    const onEnded = () => {
+      [menuBtnRef, seeMoreRef, logoRef].forEach(r => {
+        if (r.current) {
+          r.current.style.opacity       = "1";
+          (r.current as HTMLElement).style.pointerEvents = "auto";
+        }
+      });
+    };
+    video.addEventListener("ended", onEnded);
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", startVideo);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("ended",      onEnded);
     };
   }, []);
 
@@ -113,12 +86,13 @@ export default function HeroSection() {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════
-          HERO — 500 vh scroll zone
+          HERO — tall scroll zone keeps the sticky panel visible
+          while the video plays at native speed
       ═══════════════════════════════════════════════════════ */}
       <section ref={heroRef} style={{ height: "500vh" }} className="relative">
         <div className="sticky top-0 overflow-hidden" style={{ height: "100svh" }}>
 
-          {/* Video — visible, covers viewport, no autoplay */}
+          {/* Video — plays natively, no seeking */}
           <video
             ref={videoRef}
             muted
@@ -149,7 +123,7 @@ export default function HeroSection() {
             ref={logoRef}
             aria-hidden="true"
             className="absolute top-5 left-5 z-50 pointer-events-none"
-            style={{ opacity: 0 }}
+            style={{ opacity: 0, transition: "opacity 0.6s ease" }}
           >
             <Image
               src="/logo.jpeg"
@@ -170,6 +144,7 @@ export default function HeroSection() {
             style={{
               opacity: 0,
               pointerEvents: "none",
+              transition: "opacity 0.6s ease",
               background: "rgba(8,8,8,0.45)",
               border: "1px solid rgba(201,168,76,0.30)",
               backdropFilter: "blur(8px)",
@@ -190,6 +165,7 @@ export default function HeroSection() {
             style={{
               opacity: 0,
               pointerEvents: "none",
+              transition: "opacity 0.7s ease",
               bottom: "33%",
               left: "50%",
               transform: "translateX(-50%)",
