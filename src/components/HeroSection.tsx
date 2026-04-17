@@ -24,6 +24,7 @@ export default function HeroSection() {
   // Frames array and load tracking (refs = no re-render on update)
   const framesRef     = useRef<HTMLImageElement[]>([]);
   const loadedRef     = useRef(0);
+  const currentIdxRef = useRef(0); // track active frame for resize redraws
 
   const [loadPct,  setLoadPct]  = useState(0);    // 0-100 for progress bar
   const [ready,    setReady]    = useState(false); // all frames loaded
@@ -89,9 +90,10 @@ export default function HeroSection() {
     const resize = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
-      // Redraw current frame after resize
+      // Redraw whichever frame is currently active (not always frame 0)
       const frames = framesRef.current;
-      if (frames.length > 0 && frames[0]?.complete) drawFrame(frames[0]);
+      const f = frames[currentIdxRef.current];
+      if (f?.complete && f.naturalWidth) drawFrame(f);
     };
 
     resize();
@@ -117,6 +119,7 @@ export default function HeroSection() {
         Math.floor(progress * TOTAL_FRAMES),
         TOTAL_FRAMES - 1
       );
+      currentIdxRef.current = idx;
       const frame = framesRef.current[idx];
       if (frame) drawFrame(frame);
 
