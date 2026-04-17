@@ -189,93 +189,89 @@ export default function HeroSection() {
         position: "fixed",
         inset: 0,
         zIndex: 200,
+        background: "#0c0b09",
+        transform: menuOpen ? "translateX(0)" : "translateX(100%)",
+        transition: "transform 0.65s cubic-bezier(0.76,0,0.24,1)",
         display: "flex",
         flexDirection: "column",
-        background: "#080808",
-        transform: menuOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.6s cubic-bezier(0.76,0,0.24,1)",
       }}
     >
-      {/* Grain overlay */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          opacity: 0.028,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundSize: "200px 200px",
-        }}
-      />
+      {/* Grain */}
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.032,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        backgroundSize: "200px 200px",
+      }} />
 
-      {/* Header — logo + bare close */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 28px 0", flexShrink: 0 }}>
-        <Image src="/logo.jpeg" alt="Mushy Parfum" width={34} height={34} className="rounded" style={{ opacity: 0.8 }} />
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "32px 32px 0", flexShrink: 0 }}>
+        <span style={{
+          fontFamily: '"Cinzel", serif',
+          fontSize: 8.5,
+          letterSpacing: "0.3em",
+          color: "rgba(184,145,74,0.45)",
+          textTransform: "uppercase",
+        }}>
+          Mushy Parfum
+        </span>
         <button
           onClick={() => setMenuOpen(false)}
           aria-label="Close menu"
           style={{
-            background: "none",
-            border: "none",
-            padding: "4px 0 4px 8px",
+            background: "none", border: "none", padding: 0,
             cursor: "pointer",
-            color: "#F5F0E8",
-            opacity: 0.5,
-            fontSize: 20,
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: 28, fontWeight: 300,
+            color: "rgba(232,226,214,0.38)",
             lineHeight: 1,
-            fontWeight: 200,
           }}
-        >✕</button>
+        >×</button>
       </div>
 
-      {/* Nav — staggered cascade */}
-      <nav style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 28px 0 32px" }}>
+      {/* Nav */}
+      <nav style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 32px" }}>
         {[["01","Collections"],["02","About"],["03","Stockists"],["04","Contact"]].map(([num, label], i) => (
           <a
             key={label}
             href="#"
             onClick={() => setMenuOpen(false)}
             style={{
-              display: "block",
-              fontFamily: '"Cormorant Garamond", serif',
-              fontSize: "clamp(38px, 11vw, 56px)",
-              fontWeight: 300,
-              color: "#F5F0E8",
+              display: "flex",
+              alignItems: "baseline",
+              gap: "1.2em",
+              fontFamily: '"Cinzel", serif',
+              fontSize: "clamp(24px, 7vw, 32px)",
+              fontWeight: 400,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: "#E8E2D6",
               textDecoration: "none",
-              letterSpacing: "-0.02em",
-              lineHeight: 1.3,
-              padding: "0.06em 0",
+              padding: "0.62em 0",
+              borderBottom: "1px solid rgba(184,145,74,0.09)",
               opacity: menuOpen ? 1 : 0,
-              transform: menuOpen ? "translateY(0)" : "translateY(18px)",
-              transition: `opacity 0.5s ease ${0.08 + i * 0.07}s, transform 0.55s cubic-bezier(0.16,1,0.3,1) ${0.08 + i * 0.07}s`,
+              transform: menuOpen ? "translateX(0)" : "translateX(24px)",
+              transition: `opacity 0.45s ease ${0.08 + i * 0.07}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${0.08 + i * 0.07}s`,
             }}
           >
             <span style={{
               fontFamily: '"Cinzel", serif',
               fontSize: 8,
-              letterSpacing: "0.22em",
-              color: "rgba(201,168,76,0.4)",
-              verticalAlign: "super",
-              marginRight: "0.8em",
+              letterSpacing: "0.12em",
+              color: "rgba(184,145,74,0.32)",
+              flexShrink: 0,
             }}>{num}</span>
             {label}
           </a>
         ))}
       </nav>
 
-      {/* Footer — brand mark only */}
-      <div style={{ padding: "0 28px 34px", flexShrink: 0 }}>
-        <div style={{ width: 28, height: 1, background: "rgba(201,168,76,0.18)", marginBottom: 12 }} />
+      {/* Footer */}
+      <div style={{ padding: "0 32px 36px", flexShrink: 0 }}>
         <p style={{
-          fontFamily: '"Cinzel", serif',
-          fontSize: 7,
-          letterSpacing: "0.38em",
-          color: "rgba(245,240,232,0.16)",
+          fontFamily: '"Cinzel", serif', fontSize: 7,
+          letterSpacing: "0.35em", color: "rgba(232,226,214,0.1)",
           textTransform: "uppercase",
-        }}>
-          Mushy Parfum
-        </p>
+        }}>Est. 2024</p>
       </div>
     </div>
   );
@@ -291,9 +287,16 @@ export default function HeroSection() {
   if (isMobile) {
     return (
       <>
-        <section style={{ height: "100svh", background: "#080808", position: "relative", overflow: "hidden" }}>
+        <section style={{ height: "100svh", background: "#0c0b09", position: "relative", overflow: "hidden" }}>
 
-          {/* Video — preloads in background, fades in when scrolled */}
+          {/* Grain — always visible */}
+          <div aria-hidden="true" style={{
+            position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none", opacity: 0.034,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "200px 200px",
+          }} />
+
+          {/* Video — slow cinematic fade in */}
           <video
             ref={mVideoRef}
             src="/mobile-hero.mp4"
@@ -301,156 +304,170 @@ export default function HeroSection() {
             playsInline
             preload="auto"
             onEnded={() => setMPhase("done")}
-            className="absolute inset-0 w-full h-full"
             style={{
-              objectFit: "cover",
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", zIndex: 1,
               opacity: mPhase !== "intro" ? 1 : 0,
-              transition: "opacity 0.9s ease",
+              transition: "opacity 3.2s ease",
             }}
           />
 
-          {/* Intro text — slides up and fades on scroll */}
+          {/* Video vignette */}
+          <div aria-hidden="true" style={{
+            position: "absolute", inset: 0, zIndex: 7, pointerEvents: "none",
+            opacity: mPhase !== "intro" ? 1 : 0,
+            transition: "opacity 3.2s ease",
+            background: [
+              "linear-gradient(to bottom, rgba(12,11,9,0.4) 0%, transparent 30%)",
+              "linear-gradient(to top, rgba(12,11,9,0.55) 0%, transparent 35%)",
+            ].join(","),
+          }} />
+
+          {/* ── INTRO ─────────────────────────────────────────── */}
           <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none"
             style={{
-              transform: mPhase === "intro" ? "translateY(0)" : "translateY(-50px)",
-              opacity:   mPhase === "intro" ? (mIntroShown ? 1 : 0) : 0,
+              position: "absolute", inset: 0, zIndex: 10,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              pointerEvents: "none",
+              opacity: mPhase === "intro" ? (mIntroShown ? 1 : 0) : 0,
+              transform: mPhase !== "intro" ? "translateY(-32px) scale(0.97)" : "translateY(0) scale(1)",
               transition: mPhase !== "intro"
-                ? "transform 0.7s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease"
-                : "opacity 1.4s ease",
+                ? "opacity 0.55s ease, transform 0.85s cubic-bezier(0.4,0,0.2,1)"
+                : "opacity 1.6s ease",
             }}
           >
-            {/* Ornament line + label */}
-            <div style={{ display: "flex", alignItems: "center", gap: "0.9rem", marginBottom: "1.6rem" }}>
-              <div style={{ width: 22, height: 1, background: "rgba(201,168,76,0.35)" }} />
-              <span
-                className="font-cinzel"
-                style={{ fontSize: 7.5, letterSpacing: "0.52em", color: "rgba(201,168,76,0.55)", textTransform: "uppercase" }}
-              >
-                The House of
-              </span>
-              <div style={{ width: 22, height: 1, background: "rgba(201,168,76,0.35)" }} />
+            {/* Title block */}
+            <div style={{ textAlign: "center", lineHeight: 1 }}>
+              <h1 style={{
+                fontFamily: '"Cinzel", serif',
+                fontSize: "clamp(52px, 15.5vw, 74px)",
+                fontWeight: 500,
+                letterSpacing: "0.24em",
+                color: "#E8E2D6",
+                textTransform: "uppercase",
+                margin: 0,
+                lineHeight: 0.95,
+                paddingRight: "0.24em",
+              }}>
+                Mushy
+              </h1>
+
+              {/* Gold gradient rule */}
+              <div style={{
+                width: "100%",
+                height: 1,
+                margin: "0.55em 0",
+                background: "linear-gradient(to right, transparent, rgba(184,145,74,0.55) 20%, rgba(184,145,74,0.55) 80%, transparent)",
+              }} />
+
+              <p style={{
+                fontFamily: '"Cinzel", serif',
+                fontSize: "clamp(22px, 6.5vw, 32px)",
+                fontWeight: 400,
+                letterSpacing: "0.58em",
+                color: "rgba(184,145,74,0.78)",
+                textTransform: "uppercase",
+                margin: 0,
+                lineHeight: 1,
+                paddingRight: "0.58em",
+              }}>
+                Parfum
+              </p>
             </div>
 
-            <h1
-              className="font-cormorant"
-              style={{
-                fontSize: "clamp(48px, 14vw, 70px)",
-                fontWeight: 300,
-                letterSpacing: "0.06em",
-                color: "#F5F0E8",
-                lineHeight: 1,
-                textShadow: "0 2px 50px rgba(0,0,0,0.8)",
-              }}
-            >
-              Mushy Parfum
-            </h1>
-
-            {/* Thin rule */}
-            <div style={{ width: 36, height: 1, background: "rgba(201,168,76,0.25)", marginTop: "1.6rem" }} />
-
-            {/* Scroll cue */}
-            <div style={{ marginTop: "3.2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.55rem" }}>
-              <span
-                className="font-cinzel"
-                style={{
-                  fontSize: 7.5,
-                  letterSpacing: "0.48em",
-                  color: "rgba(245,240,232,0.3)",
-                  textTransform: "uppercase",
-                  animation: "pulse-fade 2.8s ease-in-out infinite",
-                }}
-              >
+            {/* Scroll cue — pinned to bottom */}
+            <div style={{
+              position: "absolute",
+              bottom: "9vh",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem",
+            }}>
+              <span style={{
+                fontFamily: '"Cinzel", serif',
+                fontSize: 7,
+                letterSpacing: "0.52em",
+                color: "rgba(232,226,214,0.25)",
+                textTransform: "uppercase",
+                paddingRight: "0.52em",
+                animation: "pulse-fade 3s ease-in-out infinite",
+                whiteSpace: "nowrap",
+              }}>
                 Scroll
               </span>
-              <span
-                className="block w-px"
-                style={{
-                  height: 36,
-                  background: "linear-gradient(to bottom, rgba(201,168,76,0.45), transparent)",
-                  animation: "pulse-line 2.8s ease-in-out infinite",
-                }}
-              />
+              <span style={{
+                display: "block", width: 1, height: 38,
+                background: "linear-gradient(to bottom, rgba(184,145,74,0.4), transparent)",
+                animation: "pulse-line 3s ease-in-out infinite",
+              }} />
             </div>
           </div>
 
-          {/* Logo — appears when video ends */}
-          <div
-            className="absolute top-5 left-5 z-50 pointer-events-none"
-            style={{ opacity: mPhase === "done" ? 1 : 0, transition: "opacity 0.8s ease 0.3s" }}
-          >
+          {/* ── POST-VIDEO UI ──────────────────────────────────── */}
+
+          {/* Logo — top left */}
+          <div style={{
+            position: "absolute", top: 28, left: 28, zIndex: 50,
+            opacity: mPhase === "done" ? 1 : 0,
+            transition: "opacity 1s ease 0.4s",
+            pointerEvents: "none",
+          }}>
             <Image
               src="/logo.jpeg"
               alt="Mushy Parfum"
-              width={44}
-              height={44}
+              width={38}
+              height={38}
               className="rounded"
-              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
+              style={{ opacity: 0.88 }}
             />
           </div>
 
-          {/* Menu button — appears when video ends (bare lines, no box) */}
+          {/* Hamburger — top right, bare lines */}
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             style={{
-              position: "absolute",
-              top: 26,
-              right: 26,
-              zIndex: 50,
+              position: "absolute", top: 28, right: 28, zIndex: 50,
               opacity: mPhase === "done" ? 1 : 0,
               pointerEvents: mPhase === "done" ? "auto" : "none",
-              transition: "opacity 0.8s ease 0.3s",
-              background: "none",
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              gap: 7,
-              width: 30,
-              height: 22,
+              transition: "opacity 1s ease 0.4s",
+              background: "none", border: "none", padding: 0, cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 7,
             }}
           >
-            <span style={{ display: "block", width: 26, height: 1, background: "#F5F0E8", opacity: 0.82 }} />
-            <span style={{ display: "block", width: 18, height: 1, background: "#F5F0E8", opacity: 0.82 }} />
-            <span style={{ display: "block", width: 26, height: 1, background: "#F5F0E8", opacity: 0.82 }} />
+            <span style={{ display: "block", width: 28, height: 1, background: "#E8E2D6", opacity: 0.72 }} />
+            <span style={{ display: "block", width: 20, height: 1, background: "#E8E2D6", opacity: 0.72 }} />
+            <span style={{ display: "block", width: 28, height: 1, background: "#E8E2D6", opacity: 0.72 }} />
           </button>
 
-          {/* See more — appears when video ends */}
-          <div
-            className="absolute z-50 flex flex-col items-center pointer-events-none"
-            style={{
-              opacity: mPhase === "done" ? 1 : 0,
-              transition: "opacity 0.8s ease 0.6s",
-              bottom: "30%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              gap: "0.6rem",
-            }}
-          >
-            <span
-              className="font-cinzel whitespace-nowrap"
-              style={{
-                fontSize: 8,
-                letterSpacing: "0.48em",
-                color: "rgba(245,240,232,0.65)",
-                textTransform: "uppercase",
-                textShadow: "0 1px 20px rgba(0,0,0,0.95)",
-              }}
-            >
-              See more
+          {/* Explore cue — bottom center */}
+          <div style={{
+            position: "absolute", bottom: 28, left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 50,
+            opacity: mPhase === "done" ? 1 : 0,
+            transition: "opacity 1s ease 0.7s",
+            pointerEvents: "none",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "0.65rem",
+          }}>
+            <span style={{
+              fontFamily: '"Cinzel", serif',
+              fontSize: 7.5,
+              letterSpacing: "0.44em",
+              color: "rgba(232,226,214,0.5)",
+              textTransform: "uppercase",
+              paddingRight: "0.44em",
+              textShadow: "0 1px 18px rgba(0,0,0,0.9)",
+              whiteSpace: "nowrap",
+            }}>
+              Explore
             </span>
-            <span
-              className="block w-px"
-              style={{
-                height: 34,
-                background: "linear-gradient(to bottom, rgba(201,168,76,0.7), transparent)",
-                animation: "pulse-line 2.2s ease-in-out infinite",
-              }}
-            />
+            <span style={{
+              display: "block", width: 1, height: 32,
+              background: "linear-gradient(to bottom, rgba(184,145,74,0.6), transparent)",
+              animation: "pulse-line 2.4s ease-in-out infinite",
+            }} />
           </div>
 
         </section>
