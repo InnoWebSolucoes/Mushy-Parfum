@@ -1,0 +1,148 @@
+{
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "about": "About",
+    "contact": "Contact",
+    "cart": "Cart"
+  },
+  "hero": {
+    "eyebrow": "Maison de Parfum",
+    "headline": "The scent of power.",
+    "sub": "Luxury Arabic & Oriental perfumery, crafted for those who command presence.",
+    "cta": "Shop Now",
+    "scroll": "Scroll to explore"
+  },
+  "brand": {
+    "title": "Born from the East",
+    "description": "Mushy Parfum is a tribute to the ancient art of Arabic perfumery — where ingredients are sacred, craftsmanship is devotion, and every bottle holds a story worth telling."
+  },
+  "featured": {
+    "title": "The Collection",
+    "subtitle": "Handcrafted for those who leave a trail."
+  },
+  "marquee": {
+    "items": ["OUD", "AMBER", "SAFFRON", "ROSE", "BAKHOOR", "SANDALWOOD", "MUSK", "INCENSE", "LEATHER", "VETIVER"]
+  },
+  "shop": {
+    "title": "The Collection",
+    "subtitle": "Twenty expressions of luxury.",
+    "filter": "Filter",
+    "all": "All",
+    "masculine": "Masculine",
+    "feminine": "Feminine",
+    "unisex": "Unisex",
+    "oud": "Oud",
+    "floral": "Floral",
+    "amber": "Amber",
+    "oriental": "Oriental",
+    "woody": "Woody",
+    "citrus": "Citrus",
+    "fresh": "Fresh",
+    "sortBy": "Sort by",
+    "featured": "Featured",
+    "priceAsc": "Price: Low to High",
+    "priceDesc": "Price: High to Low",
+    "name": "Name",
+    "buyNow": "Buy Now",
+    "viewDetails": "View Details",
+    "new": "New",
+    "bestseller": "Bestseller",
+    "noResults": "No fragrances found."
+  },
+  "product": {
+    "topNotes": "Top Notes",
+    "heartNotes": "Heart Notes",
+    "baseNotes": "Base Notes",
+    "notesTitle": "Fragrance Notes",
+    "performance": "Performance",
+    "longevity": "Longevity",
+    "sillage": "Sillage",
+    "projection": "Projection",
+    "onClothes": "Stays on Clothes",
+    "compliments": "Compliments",
+    "seduction": "Seduction Score",
+    "hours": "hours",
+    "size": "Size",
+    "quantity": "Quantity",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "limitedStock": "Limited edition · Not restocked",
+    "inStock": "In Stock",
+    "outOfStock": "Out of Stock",
+    "relatedTitle": "You may also love"
+  },
+  "about": {
+    "title": "Our Story",
+    "subtitle": "Where the East meets eternity.",
+    "story1": "Mushy Parfum was born from a deep reverence for Arabic perfumery — an art form thousands of years old, rooted in the spice routes of the ancient world.",
+    "story2": "We believe perfume is not decoration. It is identity. It is memory. It is the invisible signature you leave in every room you enter and every person you encounter.",
+    "story3": "Our fragrances are composed using the finest raw materials from across the Arab world — Omani frankincense, Cambodian oud, Iranian saffron, and Bulgarian rose absolute — because luxury is not a label. It is a standard.",
+    "missionTitle": "Mission",
+    "mission": "To bring the soul of Oriental perfumery to the world, without compromise, without apology.",
+    "visionTitle": "Vision",
+    "vision": "A world where every person can carry the power of Eastern luxury wherever they go."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We're here to guide your journey.",
+    "whatsapp": "Message on WhatsApp",
+    "instagram": "Follow on Instagram",
+    "email": "Send us a message",
+    "name": "Your Name",
+    "emailField": "Your Email",
+    "message": "Your Message",
+    "send": "Send Message",
+    "sending": "Sending...",
+    "success": "Message sent! We'll be in touch shortly.",
+    "error": "Something went wrong. Please try again."
+  },
+  "checkout": {
+    "title": "Checkout",
+    "orderSummary": "Order Summary",
+    "paymentMethod": "Payment Method",
+    "card": "Credit / Debit Card",
+    "mbway": "MB Way",
+    "cardNumber": "Card Number",
+    "expiry": "Expiry",
+    "cvc": "CVC",
+    "cardName": "Name on Card",
+    "phone": "MB Way Phone Number",
+    "pay": "Complete Purchase",
+    "paying": "Processing...",
+    "demo": "This is a demo. Use test card 4242 4242 4242 4242.",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "free": "Free",
+    "mbwayInstructions": "Open your MB Way app and approve the payment request.",
+    "mbwayTimer": "Payment request expires in",
+    "back": "Back to Cart"
+  },
+  "success": {
+    "title": "Order Confirmed",
+    "subtitle": "Your luxury awaits.",
+    "message": "Your order has been placed successfully. A confirmation will be sent to your email.",
+    "orderRef": "Order Reference",
+    "continueShopping": "Continue Shopping",
+    "home": "Back to Home"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty.",
+    "emptySubtitle": "Discover our collection.",
+    "explore": "Explore Collection",
+    "remove": "Remove",
+    "total": "Total",
+    "checkout": "Proceed to Checkout"
+  },
+  "footer": {
+    "tagline": "The scent of power.",
+    "rights": "All rights reserved.",
+    "navigation": "Navigation",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "followUs": "Follow Us"
+  }
+}
