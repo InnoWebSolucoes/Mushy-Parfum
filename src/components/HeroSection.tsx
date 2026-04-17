@@ -3,161 +3,172 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 
-// ─────────────────────────────────────────────────────────────────
-//  CONFIG — edit these two lines after uploading your frames
-// ─────────────────────────────────────────────────────────────────
-const TOTAL_FRAMES = 150;
-const FRAME_URL    = (n: number) =>
+// ── Desktop animation config ──────────────────────────────────────
+const TOTAL_FRAMES  = 150;
+const FRAME_URL     = (n: number) =>
   `/frames/${String(n).padStart(3, "0")}.jpg`;
-// ─────────────────────────────────────────────────────────────────
+const FADE_START    = 0.78;
+const FADE_FINISH   = 0.96;
+const TEXT_FADE_END = 0.05;
 
-const FADE_START       = 0.78;
-const FADE_FINISH      = 0.96;
-const TEXT_FADE_END    = 0.05; // intro text fully gone by 5% scroll progress
+type MobilePhase = "intro" | "video" | "done";
 
 export default function HeroSection() {
-  const heroRef        = useRef<HTMLElement>(null);
-  const canvasRef      = useRef<HTMLCanvasElement>(null);
-  const menuBtnRef     = useRef<HTMLButtonElement>(null);
-  const seeMoreRef     = useRef<HTMLButtonElement>(null);
-  const logoRef        = useRef<HTMLDivElement>(null);
-  const introRef       = useRef<HTMLDivElement>(null);
 
-  const framesRef      = useRef<HTMLImageElement[]>([]);
-  const loadedRef      = useRef(0);
-  const currentIdxRef  = useRef(0);
+  // ── Shared ────────────────────────────────────────────────────────
+  const [isMobile, setIsMobile]   = useState<boolean | null>(null);
+  const [menuOpen, setMenuOpen]   = useState(false);
 
+  // ── Desktop ───────────────────────────────────────────────────────
+  const heroRef       = useRef<HTMLElement>(null);
+  const canvasRef     = useRef<HTMLCanvasElement>(null);
+  const dMenuBtnRef   = useRef<HTMLButtonElement>(null);
+  const dSeeMoreRef   = useRef<HTMLButtonElement>(null);
+  const dLogoRef      = useRef<HTMLDivElement>(null);
+  const dIntroRef     = useRef<HTMLDivElement>(null);
+  const framesRef     = useRef<HTMLImageElement[]>([]);
+  const loadedRef     = useRef(0);
+  const currentIdxRef = useRef(0);
   const [loadPct, setLoadPct] = useState(0);
   const [ready,   setReady]   = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
-  // ── Cover-fit canvas draw ──────────────────────────────────────
+  // ── Mobile ────────────────────────────────────────────────────────
+  const mVideoRef        = useRef<HTMLVideoElement>(null);
+  const [mPhase,         setMPhase]       = useState<MobilePhase>("intro");
+  const [mIntroShown,    setMIntroShown]  = useState(false);
+
+  // ── Detect device ─────────────────────────────────────────────────
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+
+  // ── Cover-fit draw (desktop) ──────────────────────────────────────
   const drawFrame = useCallback((img: HTMLImageElement) => {
     const canvas = canvasRef.current;
     if (!canvas || !img.complete || !img.naturalWidth) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     const cw = canvas.width, ch = canvas.height;
     const iw = img.naturalWidth, ih = img.naturalHeight;
     const scale = Math.max(cw / iw, ch / ih);
-    const dx = (cw - iw * scale) / 2;
-    const dy = (ch - ih * scale) / 2;
-    ctx.drawImage(img, dx, dy, iw * scale, ih * scale);
+    ctx.drawImage(img,
+      (cw - iw * scale) / 2,
+      (ch - ih * scale) / 2,
+      iw * scale, ih * scale
+    );
   }, []);
 
-  // ── Preload all frames on mount ────────────────────────────────
+  // ── Desktop: preload frames ───────────────────────────────────────
   useEffect(() => {
-    const imgs: HTMLImageElement[] = new Array(TOTAL_FRAMES);
+    if (isMobile !== false) return;
+    const imgs = new Array<HTMLImageElement>(TOTAL_FRAMES);
     framesRef.current = imgs;
     loadedRef.current = 0;
-
     for (let i = 0; i < TOTAL_FRAMES; i++) {
       const img = new window.Image();
       img.src = FRAME_URL(i + 1);
-
       img.onload = () => {
         loadedRef.current += 1;
-        const pct = Math.round((loadedRef.current / TOTAL_FRAMES) * 100);
-        setLoadPct(pct);
+        setLoadPct(Math.round((loadedRef.current / TOTAL_FRAMES) * 100));
         if (i === 0) drawFrame(img);
         if (loadedRef.current === TOTAL_FRAMES) setReady(true);
       };
-
       img.onerror = () => {
         loadedRef.current += 1;
-        const pct = Math.round((loadedRef.current / TOTAL_FRAMES) * 100);
-        setLoadPct(pct);
+        setLoadPct(Math.round((loadedRef.current / TOTAL_FRAMES) * 100));
         if (loadedRef.current === TOTAL_FRAMES) setReady(true);
       };
-
       imgs[i] = img;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isMobile, drawFrame]);
 
-  // ── Canvas resize — only on width change (ignores mobile toolbar) ─
+  // ── Desktop: canvas resize (width-only, ignores mobile toolbar) ───
   useEffect(() => {
+    if (isMobile !== false) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const resize = () => {
-      if (window.innerWidth === canvas.width) return; // height-only = toolbar, skip
+      if (window.innerWidth === canvas.width) return;
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
       const f = framesRef.current[currentIdxRef.current];
       if (f?.complete && f.naturalWidth) drawFrame(f);
     };
-
     resize();
     window.addEventListener("resize", resize, { passive: true });
     return () => window.removeEventListener("resize", resize);
-  }, [drawFrame]);
+  }, [isMobile, drawFrame]);
 
-  // ── Fade intro text in once loading completes ──────────────────
+  // ── Desktop: intro text fade-in ───────────────────────────────────
   useEffect(() => {
     if (!ready) return;
-    const el = introRef.current;
+    const el = dIntroRef.current;
     if (!el) return;
     el.style.transition = "opacity 1.4s ease";
     requestAnimationFrame(() => { el.style.opacity = "1"; });
   }, [ready]);
 
-  // ── Scroll → frame index + UI opacity ─────────────────────────
+  // ── Desktop: scroll → frames + UI ────────────────────────────────
   useEffect(() => {
-    if (!ready) return;
-
+    if (isMobile !== false || !ready) return;
     const hero = heroRef.current;
     if (!hero) return;
-
     const onScroll = () => {
-      const range = hero.offsetHeight - window.innerHeight;
+      const range    = hero.offsetHeight - window.innerHeight;
       const progress = range > 0
         ? Math.max(0, Math.min(window.scrollY / range, 1))
         : 0;
-
-      // Advance frame
-      const idx = Math.min(
-        Math.floor(progress * TOTAL_FRAMES),
-        TOTAL_FRAMES - 1
-      );
+      const idx = Math.min(Math.floor(progress * TOTAL_FRAMES), TOTAL_FRAMES - 1);
       currentIdxRef.current = idx;
       const frame = framesRef.current[idx];
       if (frame) drawFrame(frame);
-
-      // Intro text — fades out as soon as user scrolls
-      if (introRef.current && window.scrollY > 0) {
-        const textOp = Math.max(0, 1 - progress / TEXT_FADE_END);
-        introRef.current.style.transition = "";
-        introRef.current.style.opacity = String(textOp);
+      // Intro text
+      if (dIntroRef.current && window.scrollY > 0) {
+        const tOp = Math.max(0, 1 - progress / TEXT_FADE_END);
+        dIntroRef.current.style.transition = "";
+        dIntroRef.current.style.opacity    = String(tOp);
       }
-
-      // UI elements (logo, menu btn, see more) fade in near end
+      // UI elements
       const rawOp = progress >= FADE_START
         ? (progress - FADE_START) / (FADE_FINISH - FADE_START)
         : 0;
       const op = String(Math.min(rawOp, 1));
       const pe = parseFloat(op) > 0.4 ? "auto" : "none";
-
-      if (menuBtnRef.current) {
-        menuBtnRef.current.style.opacity       = op;
-        menuBtnRef.current.style.pointerEvents = pe;
-      }
-      if (seeMoreRef.current) {
-        seeMoreRef.current.style.opacity       = op;
-        seeMoreRef.current.style.pointerEvents = pe;
-      }
-      if (logoRef.current) {
-        logoRef.current.style.opacity = op;
-      }
+      if (dMenuBtnRef.current)  { dMenuBtnRef.current.style.opacity = op; dMenuBtnRef.current.style.pointerEvents = pe; }
+      if (dSeeMoreRef.current)  { dSeeMoreRef.current.style.opacity = op; dSeeMoreRef.current.style.pointerEvents = pe; }
+      if (dLogoRef.current)       dLogoRef.current.style.opacity = op;
     };
-
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [ready, drawFrame]);
+  }, [isMobile, ready, drawFrame]);
 
-  // ── Menu body-scroll lock ──────────────────────────────────────
+  // ── Mobile: fade in intro text after mount ────────────────────────
+  useEffect(() => {
+    if (isMobile !== true) return;
+    const t = setTimeout(() => setMIntroShown(true), 300);
+    return () => clearTimeout(t);
+  }, [isMobile]);
+
+  // ── Mobile: trigger on first scroll or swipe ─────────────────────
+  useEffect(() => {
+    if (isMobile !== true || mPhase !== "intro") return;
+    const trigger = () => setMPhase("video");
+    window.addEventListener("wheel",     trigger, { passive: true, once: true });
+    window.addEventListener("touchmove", trigger, { passive: true, once: true });
+    return () => {
+      window.removeEventListener("wheel",     trigger);
+      window.removeEventListener("touchmove", trigger);
+    };
+  }, [isMobile, mPhase]);
+
+  // ── Mobile: play video when phase → video ────────────────────────
+  useEffect(() => {
+    if (mPhase !== "video") return;
+    mVideoRef.current?.play().catch(() => {});
+  }, [mPhase]);
+
+  // ── Menu scroll lock ──────────────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -168,15 +179,213 @@ export default function HeroSection() {
       window.scrollTo({ top: heroRef.current.offsetHeight, behavior: "smooth" });
   };
 
+  // ── Shared menu overlay ───────────────────────────────────────────
+  const renderMenu = () => (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Navigation"
+      className="fixed inset-0 z-[200] flex flex-col"
+      style={{
+        background: "#080808",
+        transform: menuOpen ? "translateX(0)" : "translateX(100%)",
+        transition: "transform 0.55s cubic-bezier(0.76,0,0.24,1)",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none opacity-[0.035]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundSize: "200px 200px",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute left-8 inset-y-0 w-px pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, transparent, rgba(201,168,76,0.4) 20%, rgba(201,168,76,0.4) 80%, transparent)" }}
+      />
+      <div className="flex items-center justify-between px-5 pt-6 pb-5 pl-14 flex-shrink-0">
+        <Image src="/logo.jpeg" alt="Mushy Parfum" width={40} height={40} className="rounded opacity-90" />
+        <button
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close menu"
+          className="w-11 h-11 flex items-center justify-center rounded text-lg font-light flex-shrink-0"
+          style={{ color: "#C9A84C", border: "1px solid rgba(201,168,76,0.20)" }}
+        >✕</button>
+      </div>
+      <div
+        aria-hidden="true"
+        className="mx-5 ml-14 h-px flex-shrink-0"
+        style={{ background: "linear-gradient(to right, rgba(139,115,85,0.4), transparent)" }}
+      />
+      <nav className="flex-1 flex flex-col justify-center pl-14 pr-5 gap-1 py-10">
+        {[["01","Collections"],["02","About"],["03","Stockists"],["04","Contact"]].map(([num, label]) => (
+          <a
+            key={label}
+            href="#"
+            onClick={() => setMenuOpen(false)}
+            className="block py-3 font-cormorant text-[36px] font-light"
+            style={{ color: "#F5F0E8", borderBottom: "1px solid rgba(201,168,76,0.08)", textDecoration: "none", letterSpacing: "-0.01em" }}
+          >
+            <span className="font-cinzel text-[11px] tracking-[0.18em] align-super mr-2" style={{ color: "#8B7355" }}>{num}</span>
+            {label}
+          </a>
+        ))}
+      </nav>
+      <div className="pl-14 pr-5 pb-10 flex-shrink-0">
+        <p className="font-cormorant italic text-[13px] mb-4" style={{ color: "#8B7355", letterSpacing: "0.06em" }}>
+          "Elegance · Confidence · Class"
+        </p>
+        <div className="flex gap-5">
+          {["Instagram","TikTok","Pinterest"].map(s => (
+            <a key={s} href="#" className="font-cinzel text-[10px] tracking-[0.18em] uppercase"
+              style={{ color: "rgba(245,240,232,0.4)", textDecoration: "none" }}>{s}</a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Before hydration ──────────────────────────────────────────────
+  if (isMobile === null) {
+    return <div style={{ height: "100svh", background: "#080808" }} />;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MOBILE
+  // ═══════════════════════════════════════════════════════════════════
+  if (isMobile) {
+    return (
+      <>
+        <section style={{ height: "100svh", background: "#080808", position: "relative", overflow: "hidden" }}>
+
+          {/* Video — preloads in background, fades in when scrolled */}
+          <video
+            ref={mVideoRef}
+            src="/mobile-hero.mp4"
+            muted
+            playsInline
+            preload="auto"
+            onEnded={() => setMPhase("done")}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              objectFit: "cover",
+              opacity: mPhase !== "intro" ? 1 : 0,
+              transition: "opacity 0.9s ease",
+            }}
+          />
+
+          {/* Intro text — slides up and fades on scroll */}
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none"
+            style={{
+              transform: mPhase === "intro" ? "translateY(0)" : "translateY(-70px)",
+              opacity:   mPhase === "intro" ? (mIntroShown ? 1 : 0) : 0,
+              transition: mPhase !== "intro"
+                ? "transform 0.75s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease"
+                : "opacity 1.3s ease",
+            }}
+          >
+            <p
+              className="font-cinzel"
+              style={{ fontSize: 10, letterSpacing: "0.45em", color: "#8B7355", marginBottom: "1.5rem", textTransform: "uppercase" }}
+            >
+              The House of
+            </p>
+            <h1
+              className="font-cormorant"
+              style={{ fontSize: "clamp(44px, 13vw, 64px)", fontWeight: 300, letterSpacing: "-0.01em", color: "#F5F0E8", lineHeight: 1, textShadow: "0 2px 40px rgba(0,0,0,0.7)" }}
+            >
+              Mushy Parfum
+            </h1>
+            <div style={{ marginTop: "3.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+              <span
+                className="font-cinzel"
+                style={{ fontSize: 9, letterSpacing: "0.35em", color: "rgba(245,240,232,0.45)", textTransform: "uppercase", animation: "pulse-fade 2.5s ease-in-out infinite" }}
+              >
+                Scroll to discover
+              </span>
+              <span
+                className="block w-px h-8"
+                style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2.5s ease-in-out infinite" }}
+              />
+            </div>
+          </div>
+
+          {/* Logo — appears when video ends */}
+          <div
+            className="absolute top-5 left-5 z-50 pointer-events-none"
+            style={{ opacity: mPhase === "done" ? 1 : 0, transition: "opacity 0.8s ease 0.3s" }}
+          >
+            <Image
+              src="/logo.jpeg"
+              alt="Mushy Parfum"
+              width={44}
+              height={44}
+              className="rounded"
+              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
+            />
+          </div>
+
+          {/* Menu button — appears when video ends */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            className="absolute top-5 right-5 z-50 w-11 h-11 flex flex-col items-center justify-center gap-[5px] rounded"
+            style={{
+              opacity: mPhase === "done" ? 1 : 0,
+              pointerEvents: mPhase === "done" ? "auto" : "none",
+              transition: "opacity 0.8s ease 0.3s",
+              background: "rgba(8,8,8,0.45)",
+              border: "1px solid rgba(201,168,76,0.30)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+          >
+            <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
+            <span className="block w-3.5 h-[1.5px] rounded-sm self-start ml-3" style={{ background: "#C9A84C" }} />
+            <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
+          </button>
+
+          {/* See more — appears when video ends */}
+          <div
+            className="absolute z-50 flex flex-col items-center gap-2 pointer-events-none"
+            style={{
+              opacity: mPhase === "done" ? 1 : 0,
+              transition: "opacity 0.8s ease 0.6s",
+              bottom: "33%",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            <span
+              className="font-cinzel text-[11px] tracking-[0.25em] uppercase whitespace-nowrap"
+              style={{ color: "#F5F0E8", textShadow: "0 1px 14px rgba(0,0,0,0.9)" }}
+            >
+              See more
+            </span>
+            <span
+              className="block w-px h-8"
+              style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2s ease-in-out infinite" }}
+            />
+          </div>
+
+        </section>
+
+        {renderMenu()}
+      </>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // DESKTOP — scroll-driven frame animation (unchanged)
+  // ═══════════════════════════════════════════════════════════════════
   return (
     <>
-      {/* ═══════════════════════════════════════════════════════
-          HERO — 500 vh scroll zone
-      ═══════════════════════════════════════════════════════ */}
       <section ref={heroRef} style={{ height: "500vh" }} className="relative">
         <div className="sticky top-0 overflow-hidden" style={{ height: "100svh" }}>
 
-          {/* Canvas */}
           <canvas
             ref={canvasRef}
             className="absolute inset-0"
@@ -197,21 +406,9 @@ export default function HeroSection() {
               className="relative overflow-hidden rounded-full"
               style={{ width: 160, height: 1, background: "rgba(201,168,76,0.2)" }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "#C9A84C",
-                  transform: `scaleX(${loadPct / 100})`,
-                  transformOrigin: "left",
-                  transition: "transform 0.2s ease",
-                }}
-              />
+              <div style={{ position: "absolute", inset: 0, background: "#C9A84C", transform: `scaleX(${loadPct / 100})`, transformOrigin: "left", transition: "transform 0.2s ease" }} />
             </div>
-            <p
-              className="font-cinzel mt-4"
-              style={{ fontSize: 10, letterSpacing: "0.3em", color: "rgba(201,168,76,0.5)" }}
-            >
+            <p className="font-cinzel mt-4" style={{ fontSize: 10, letterSpacing: "0.3em", color: "rgba(201,168,76,0.5)" }}>
               {loadPct < 100 ? "LOADING" : ""}
             </p>
           </div>
@@ -230,88 +427,39 @@ export default function HeroSection() {
             }}
           />
 
-          {/* ── Intro text overlay ── */}
+          {/* Desktop intro text */}
           <div
-            ref={introRef}
+            ref={dIntroRef}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none"
             style={{ opacity: 0 }}
           >
-            <p
-              className="font-cinzel"
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.45em",
-                color: "#8B7355",
-                marginBottom: "1.5rem",
-                textTransform: "uppercase",
-              }}
-            >
+            <p className="font-cinzel" style={{ fontSize: 10, letterSpacing: "0.45em", color: "#8B7355", marginBottom: "1.5rem", textTransform: "uppercase" }}>
               The House of
             </p>
-            <h1
-              className="font-cormorant"
-              style={{
-                fontSize: "clamp(44px, 12vw, 64px)",
-                fontWeight: 300,
-                letterSpacing: "-0.01em",
-                color: "#F5F0E8",
-                lineHeight: 1,
-                textShadow: "0 2px 40px rgba(0,0,0,0.7)",
-              }}
-            >
+            <h1 className="font-cormorant" style={{ fontSize: "clamp(44px, 12vw, 64px)", fontWeight: 300, letterSpacing: "-0.01em", color: "#F5F0E8", lineHeight: 1, textShadow: "0 2px 40px rgba(0,0,0,0.7)" }}>
               Mushy Parfum
             </h1>
-            <div
-              style={{
-                marginTop: "3.5rem",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "0.75rem",
-              }}
-            >
-              <span
-                className="font-cinzel"
-                style={{
-                  fontSize: 9,
-                  letterSpacing: "0.35em",
-                  color: "rgba(245,240,232,0.45)",
-                  textTransform: "uppercase",
-                  animation: "pulse-fade 2.5s ease-in-out infinite",
-                }}
-              >
+            <div style={{ marginTop: "3.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+              <span className="font-cinzel" style={{ fontSize: 9, letterSpacing: "0.35em", color: "rgba(245,240,232,0.45)", textTransform: "uppercase", animation: "pulse-fade 2.5s ease-in-out infinite" }}>
                 Scroll to discover
               </span>
-              <span
-                className="block w-px h-8"
-                style={{
-                  background: "linear-gradient(to bottom, #C9A84C, transparent)",
-                  animation: "pulse-line 2.5s ease-in-out infinite",
-                }}
-              />
+              <span className="block w-px h-8" style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2.5s ease-in-out infinite" }} />
             </div>
           </div>
 
           {/* Logo */}
           <div
-            ref={logoRef}
+            ref={dLogoRef}
             aria-hidden="true"
             className="absolute top-5 left-5 z-50 pointer-events-none"
             style={{ opacity: 0, transition: "opacity 0.5s ease" }}
           >
-            <Image
-              src="/logo.jpeg"
-              alt="Mushy Parfum"
-              width={44}
-              height={44}
-              className="rounded"
-              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
-            />
+            <Image src="/logo.jpeg" alt="Mushy Parfum" width={44} height={44} className="rounded" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }} />
           </div>
 
           {/* Menu button */}
           <button
-            ref={menuBtnRef}
+            ref={dMenuBtnRef}
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             className="absolute top-5 right-5 z-50 w-11 h-11 flex flex-col items-center justify-center gap-[5px] rounded"
@@ -332,7 +480,7 @@ export default function HeroSection() {
 
           {/* See more */}
           <button
-            ref={seeMoreRef}
+            ref={dSeeMoreRef}
             onClick={scrollToContent}
             aria-label="See more"
             className="absolute z-50 flex flex-col items-center gap-2 bg-transparent border-none cursor-pointer"
@@ -345,112 +493,16 @@ export default function HeroSection() {
               transform: "translateX(-50%)",
             }}
           >
-            <span
-              className="font-cinzel text-[11px] tracking-[0.25em] uppercase whitespace-nowrap"
-              style={{
-                color: "#F5F0E8",
-                textShadow: "0 1px 14px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.6)",
-              }}
-            >
+            <span className="font-cinzel text-[11px] tracking-[0.25em] uppercase whitespace-nowrap" style={{ color: "#F5F0E8", textShadow: "0 1px 14px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.6)" }}>
               See more
             </span>
-            <span
-              className="block w-px h-8"
-              style={{
-                background: "linear-gradient(to bottom, #C9A84C, transparent)",
-                animation: "pulse-line 2s ease-in-out infinite",
-              }}
-            />
+            <span className="block w-px h-8" style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2s ease-in-out infinite" }} />
           </button>
 
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════
-          MENU OVERLAY
-      ═══════════════════════════════════════════════════════ */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation"
-        className="fixed inset-0 z-[200] flex flex-col"
-        style={{
-          background: "#080808",
-          transform: menuOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.55s cubic-bezier(0.76,0,0.24,1)",
-        }}
-      >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none opacity-[0.035]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            backgroundSize: "200px 200px",
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="absolute left-8 inset-y-0 w-px pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to bottom, transparent, rgba(201,168,76,0.4) 20%, rgba(201,168,76,0.4) 80%, transparent)",
-          }}
-        />
-
-        <div className="flex items-center justify-between px-5 pt-6 pb-5 pl-14 flex-shrink-0">
-          <Image src="/logo.jpeg" alt="Mushy Parfum" width={40} height={40} className="rounded opacity-90" />
-          <button
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close menu"
-            className="w-11 h-11 flex items-center justify-center rounded text-lg font-light flex-shrink-0"
-            style={{ color: "#C9A84C", border: "1px solid rgba(201,168,76,0.20)" }}
-          >
-            ✕
-          </button>
-        </div>
-
-        <div
-          aria-hidden="true"
-          className="mx-5 ml-14 h-px flex-shrink-0"
-          style={{ background: "linear-gradient(to right, rgba(139,115,85,0.4), transparent)" }}
-        />
-
-        <nav className="flex-1 flex flex-col justify-center pl-14 pr-5 gap-1 py-10">
-          {[["01","Collections"],["02","About"],["03","Stockists"],["04","Contact"]].map(([num, label]) => (
-            <a
-              key={label}
-              href="#"
-              onClick={() => setMenuOpen(false)}
-              className="block py-3 font-cormorant text-[36px] font-light"
-              style={{
-                color: "#F5F0E8",
-                borderBottom: "1px solid rgba(201,168,76,0.08)",
-                textDecoration: "none",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              <span className="font-cinzel text-[11px] tracking-[0.18em] align-super mr-2" style={{ color: "#8B7355" }}>
-                {num}
-              </span>
-              {label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="pl-14 pr-5 pb-10 flex-shrink-0">
-          <p className="font-cormorant italic text-[13px] mb-4" style={{ color: "#8B7355", letterSpacing: "0.06em" }}>
-            "Elegance · Confidence · Class"
-          </p>
-          <div className="flex gap-5">
-            {["Instagram","TikTok","Pinterest"].map(s => (
-              <a key={s} href="#" className="font-cinzel text-[10px] tracking-[0.18em] uppercase"
-                style={{ color: "rgba(245,240,232,0.4)", textDecoration: "none" }}>
-                {s}
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
+      {renderMenu()}
     </>
   );
 }
