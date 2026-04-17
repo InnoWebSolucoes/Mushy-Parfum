@@ -3,9 +3,15 @@
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 
-// How fast the video chases the scroll target (0 = frozen, 1 = instant).
-// 0.08 gives a ~130 ms half-life deceleration at 60 fps.
-const LERP        = 0.08;
+// Lerp factor: how fast the video chases the scroll position.
+// Higher = more responsive but less dreamy.  Lower = smoother but laggy.
+const LERP = 0.12;
+
+// Max seek rate — give the decoder ~33 ms between seeks (≈30 fps seeking).
+// RAF still runs at 60 fps; we just don't queue a new seek until the
+// previous one has had time to finish.
+const SEEK_INTERVAL_MS = 33;
+
 const FADE_START  = 0.78;
 const FADE_FINISH = 0.96;
 
@@ -16,11 +22,11 @@ export default function HeroSection() {
   const seeMoreRef = useRef<HTMLButtonElement>(null);
   const logoRef    = useRef<HTMLDivElement>(null);
 
-  // All hot-path state in refs — zero React re-renders per frame
-  const targetRef      = useRef(0);   // raw scroll progress   [0,1]
-  const smoothRef      = useRef(0);   // lerped progress       [0,1]
-  const seekPending    = useRef(false); // one seek in flight at a time
-  const rafRef         = useRef(0);
+  // All hot-path state lives in refs — zero React re-renders per frame
+  const targetRef   = useRef(0);
+  const smoothRef   = useRef(0);
+  const lastSeekMs  = useRef(0);   // timestamp of most-recent seek
+  const rafRef      = useRef(0);
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -29,7 +35,7 @@ export default function HeroSection() {
     const hero  = heroRef.current;
     if (!video || !hero) return;
 
-    // ── 1. Scroll → target progress (read-only, never touches DOM) ──────────
+    // ── Scroll → raw target (never touches DOM) ─────────────────
     const onScroll = () => {
       const range = hero.offsetHeight - window.innerHeight;
       targetRef.current = range > 0
@@ -38,37 +44,37 @@ export default function HeroSection() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    // ── 2. Unblock the seek queue every time a seek completes ──────────────
-    const onSeeked = () => { seekPending.current = false; };
-    video.addEventListener("seeked", onSeeked);
-
-    // ── 3. RAF loop — lerp + conditional seek + UI opacity ─────────────────
-    const tick = () => {
-      // Lerp smoothed progress toward scroll target
+    // ── RAF loop ─────────────────────────────────────────────────
+    const tick = (timestamp: number) => {
+      // 1. Lerp smoothed progress toward scroll target
       const target = targetRef.current;
       const prev   = smoothRef.current;
       const next   = Math.abs(target - prev) < 0.00005
-        ? target                           // snap when close enough
+        ? target
         : prev + (target - prev) * LERP;
       smoothRef.current = next;
 
-      // Only seek when:
-      //   • previous seek has finished
-      //   • video metadata is ready
-      //   • position differs by more than one frame (~16 ms at 60 fps)
-      if (!seekPending.current && video.readyState >= 2 && video.duration) {
+      // 2. Seek — only when:
+      //    • metadata is ready (we know the duration)
+      //    • enough time has passed since the last seek
+      //    • the desired position has actually moved
+      if (
+        video.readyState >= 1 &&
+        video.duration &&
+        timestamp - lastSeekMs.current >= SEEK_INTERVAL_MS
+      ) {
         const wanted = next * video.duration;
-        if (Math.abs(video.currentTime - wanted) > 0.016) {
-          seekPending.current = true;
-          video.currentTime   = wanted;
+        if (Math.abs(video.currentTime - wanted) > 0.01) {
+          video.currentTime = wanted;
+          lastSeekMs.current = timestamp;
         }
       }
 
-      // UI elements — direct DOM, no React state involved
+      // 3. UI opacity — direct DOM, no React state
       const rawOp = next >= FADE_START
         ? (next - FADE_START) / (FADE_FINISH - FADE_START)
         : 0;
-      const op = Math.min(rawOp, 1).toFixed(4);
+      const op = String(Math.min(rawOp, 1));
       const pe = parseFloat(op) > 0.4 ? "auto" : "none";
 
       if (menuBtnRef.current) {
@@ -91,11 +97,9 @@ export default function HeroSection() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("scroll", onScroll);
-      video.removeEventListener("seeked",  onSeeked);
     };
   }, []);
 
-  // Lock body scroll when menu open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -109,12 +113,12 @@ export default function HeroSection() {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════
-          HERO — 500 vh scroll zone, video driven by scroll
+          HERO — 500 vh scroll zone
       ═══════════════════════════════════════════════════════ */}
       <section ref={heroRef} style={{ height: "500vh" }} className="relative">
         <div className="sticky top-0 overflow-hidden" style={{ height: "100svh" }}>
 
-          {/* ── Video — visible, covers viewport ─────────────── */}
+          {/* Video — visible, covers viewport, no autoplay */}
           <video
             ref={videoRef}
             muted
@@ -126,7 +130,7 @@ export default function HeroSection() {
             <source src="/hero.mp4" type="video/mp4" />
           </video>
 
-          {/* ── Edge vignette ──────────────────────────────────── */}
+          {/* Edge vignette */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
@@ -140,7 +144,7 @@ export default function HeroSection() {
             }}
           />
 
-          {/* ── Logo — top left ────────────────────────────────── */}
+          {/* Logo */}
           <div
             ref={logoRef}
             aria-hidden="true"
@@ -157,7 +161,7 @@ export default function HeroSection() {
             />
           </div>
 
-          {/* ── Menu button — top right ────────────────────────── */}
+          {/* Menu button */}
           <button
             ref={menuBtnRef}
             onClick={() => setMenuOpen(true)}
@@ -177,7 +181,7 @@ export default function HeroSection() {
             <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
           </button>
 
-          {/* ── "See more" — bottom third ──────────────────────── */}
+          {/* See more */}
           <button
             ref={seeMoreRef}
             onClick={scrollToContent}
