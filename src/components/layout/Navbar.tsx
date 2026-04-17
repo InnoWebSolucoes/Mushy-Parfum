@@ -11,15 +11,28 @@ import { useTranslations, useLocale } from "next-intl";
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [heroPhase, setHeroPhase] = useState(true);
   const { totalItems, openCart } = useCart();
   const t = useTranslations("nav");
   const locale = useLocale();
   const pathname = usePathname();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const HERO_HEIGHT = window.innerHeight * 5; // ~500vh
+    const onScroll = () => {
+      setScrolled(window.scrollY > 50);
+      // On mobile, hide navbar while inside the hero scroll zone
+      setHeroPhase(window.scrollY < HERO_HEIGHT - window.innerHeight * 1.1);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Hero section dispatches this event when its menu button is tapped
+  useEffect(() => {
+    const handler = () => setMobileOpen(true);
+    window.addEventListener("hero:openMenu", handler);
+    return () => window.removeEventListener("hero:openMenu", handler);
   }, []);
 
   const navLinks = [
@@ -39,7 +52,7 @@ export default function Navbar() {
           scrolled
             ? "bg-[rgba(8,8,8,0.95)] backdrop-blur-md border-b border-[rgba(201,168,76,0.1)] py-3"
             : "bg-transparent py-5"
-        }`}
+        } ${heroPhase ? "md:opacity-100 opacity-0 pointer-events-none md:pointer-events-auto" : ""}`}
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] }}
