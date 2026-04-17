@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import HeroSection from "@/components/HeroSection";
 
-export default function RootPage() {
-  redirect("/pt");
+export default function Home() {
+  return <HeroSection />;
 }
