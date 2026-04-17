@@ -185,64 +185,97 @@ export default function HeroSection() {
       role="dialog"
       aria-modal="true"
       aria-label="Navigation"
-      className="fixed inset-0 z-[200] flex flex-col"
       style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        flexDirection: "column",
         background: "#080808",
         transform: menuOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.55s cubic-bezier(0.76,0,0.24,1)",
+        transition: "transform 0.6s cubic-bezier(0.76,0,0.24,1)",
       }}
     >
+      {/* Grain overlay */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none opacity-[0.035]"
         style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          opacity: 0.028,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           backgroundSize: "200px 200px",
         }}
       />
-      <div
-        aria-hidden="true"
-        className="absolute left-8 inset-y-0 w-px pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, transparent, rgba(201,168,76,0.4) 20%, rgba(201,168,76,0.4) 80%, transparent)" }}
-      />
-      <div className="flex items-center justify-between px-5 pt-6 pb-5 pl-14 flex-shrink-0">
-        <Image src="/logo.jpeg" alt="Mushy Parfum" width={40} height={40} className="rounded opacity-90" />
+
+      {/* Header — logo + bare close */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 28px 0", flexShrink: 0 }}>
+        <Image src="/logo.jpeg" alt="Mushy Parfum" width={34} height={34} className="rounded" style={{ opacity: 0.8 }} />
         <button
           onClick={() => setMenuOpen(false)}
           aria-label="Close menu"
-          className="w-11 h-11 flex items-center justify-center rounded text-lg font-light flex-shrink-0"
-          style={{ color: "#C9A84C", border: "1px solid rgba(201,168,76,0.20)" }}
+          style={{
+            background: "none",
+            border: "none",
+            padding: "4px 0 4px 8px",
+            cursor: "pointer",
+            color: "#F5F0E8",
+            opacity: 0.5,
+            fontSize: 20,
+            lineHeight: 1,
+            fontWeight: 200,
+          }}
         >✕</button>
       </div>
-      <div
-        aria-hidden="true"
-        className="mx-5 ml-14 h-px flex-shrink-0"
-        style={{ background: "linear-gradient(to right, rgba(139,115,85,0.4), transparent)" }}
-      />
-      <nav className="flex-1 flex flex-col justify-center pl-14 pr-5 gap-1 py-10">
-        {[["01","Collections"],["02","About"],["03","Stockists"],["04","Contact"]].map(([num, label]) => (
+
+      {/* Nav — staggered cascade */}
+      <nav style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 28px 0 32px" }}>
+        {[["01","Collections"],["02","About"],["03","Stockists"],["04","Contact"]].map(([num, label], i) => (
           <a
             key={label}
             href="#"
             onClick={() => setMenuOpen(false)}
-            className="block py-3 font-cormorant text-[36px] font-light"
-            style={{ color: "#F5F0E8", borderBottom: "1px solid rgba(201,168,76,0.08)", textDecoration: "none", letterSpacing: "-0.01em" }}
+            style={{
+              display: "block",
+              fontFamily: '"Cormorant Garamond", serif',
+              fontSize: "clamp(38px, 11vw, 56px)",
+              fontWeight: 300,
+              color: "#F5F0E8",
+              textDecoration: "none",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.3,
+              padding: "0.06em 0",
+              opacity: menuOpen ? 1 : 0,
+              transform: menuOpen ? "translateY(0)" : "translateY(18px)",
+              transition: `opacity 0.5s ease ${0.08 + i * 0.07}s, transform 0.55s cubic-bezier(0.16,1,0.3,1) ${0.08 + i * 0.07}s`,
+            }}
           >
-            <span className="font-cinzel text-[11px] tracking-[0.18em] align-super mr-2" style={{ color: "#8B7355" }}>{num}</span>
+            <span style={{
+              fontFamily: '"Cinzel", serif',
+              fontSize: 8,
+              letterSpacing: "0.22em",
+              color: "rgba(201,168,76,0.4)",
+              verticalAlign: "super",
+              marginRight: "0.8em",
+            }}>{num}</span>
             {label}
           </a>
         ))}
       </nav>
-      <div className="pl-14 pr-5 pb-10 flex-shrink-0">
-        <p className="font-cormorant italic text-[13px] mb-4" style={{ color: "#8B7355", letterSpacing: "0.06em" }}>
-          "Elegance · Confidence · Class"
+
+      {/* Footer — brand mark only */}
+      <div style={{ padding: "0 28px 34px", flexShrink: 0 }}>
+        <div style={{ width: 28, height: 1, background: "rgba(201,168,76,0.18)", marginBottom: 12 }} />
+        <p style={{
+          fontFamily: '"Cinzel", serif',
+          fontSize: 7,
+          letterSpacing: "0.38em",
+          color: "rgba(245,240,232,0.16)",
+          textTransform: "uppercase",
+        }}>
+          Mushy Parfum
         </p>
-        <div className="flex gap-5">
-          {["Instagram","TikTok","Pinterest"].map(s => (
-            <a key={s} href="#" className="font-cinzel text-[10px] tracking-[0.18em] uppercase"
-              style={{ color: "rgba(245,240,232,0.4)", textDecoration: "none" }}>{s}</a>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -280,35 +313,63 @@ export default function HeroSection() {
           <div
             className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none"
             style={{
-              transform: mPhase === "intro" ? "translateY(0)" : "translateY(-70px)",
+              transform: mPhase === "intro" ? "translateY(0)" : "translateY(-50px)",
               opacity:   mPhase === "intro" ? (mIntroShown ? 1 : 0) : 0,
               transition: mPhase !== "intro"
-                ? "transform 0.75s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease"
-                : "opacity 1.3s ease",
+                ? "transform 0.7s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease"
+                : "opacity 1.4s ease",
             }}
           >
-            <p
-              className="font-cinzel"
-              style={{ fontSize: 10, letterSpacing: "0.45em", color: "#8B7355", marginBottom: "1.5rem", textTransform: "uppercase" }}
-            >
-              The House of
-            </p>
+            {/* Ornament line + label */}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.9rem", marginBottom: "1.6rem" }}>
+              <div style={{ width: 22, height: 1, background: "rgba(201,168,76,0.35)" }} />
+              <span
+                className="font-cinzel"
+                style={{ fontSize: 7.5, letterSpacing: "0.52em", color: "rgba(201,168,76,0.55)", textTransform: "uppercase" }}
+              >
+                The House of
+              </span>
+              <div style={{ width: 22, height: 1, background: "rgba(201,168,76,0.35)" }} />
+            </div>
+
             <h1
               className="font-cormorant"
-              style={{ fontSize: "clamp(44px, 13vw, 64px)", fontWeight: 300, letterSpacing: "-0.01em", color: "#F5F0E8", lineHeight: 1, textShadow: "0 2px 40px rgba(0,0,0,0.7)" }}
+              style={{
+                fontSize: "clamp(48px, 14vw, 70px)",
+                fontWeight: 300,
+                letterSpacing: "0.06em",
+                color: "#F5F0E8",
+                lineHeight: 1,
+                textShadow: "0 2px 50px rgba(0,0,0,0.8)",
+              }}
             >
               Mushy Parfum
             </h1>
-            <div style={{ marginTop: "3.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+
+            {/* Thin rule */}
+            <div style={{ width: 36, height: 1, background: "rgba(201,168,76,0.25)", marginTop: "1.6rem" }} />
+
+            {/* Scroll cue */}
+            <div style={{ marginTop: "3.2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.55rem" }}>
               <span
                 className="font-cinzel"
-                style={{ fontSize: 9, letterSpacing: "0.35em", color: "rgba(245,240,232,0.45)", textTransform: "uppercase", animation: "pulse-fade 2.5s ease-in-out infinite" }}
+                style={{
+                  fontSize: 7.5,
+                  letterSpacing: "0.48em",
+                  color: "rgba(245,240,232,0.3)",
+                  textTransform: "uppercase",
+                  animation: "pulse-fade 2.8s ease-in-out infinite",
+                }}
               >
-                Scroll to discover
+                Scroll
               </span>
               <span
-                className="block w-px h-8"
-                style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2.5s ease-in-out infinite" }}
+                className="block w-px"
+                style={{
+                  height: 36,
+                  background: "linear-gradient(to bottom, rgba(201,168,76,0.45), transparent)",
+                  animation: "pulse-line 2.8s ease-in-out infinite",
+                }}
               />
             </div>
           </div>
@@ -328,46 +389,67 @@ export default function HeroSection() {
             />
           </div>
 
-          {/* Menu button — appears when video ends */}
+          {/* Menu button — appears when video ends (bare lines, no box) */}
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
-            className="absolute top-5 right-5 z-50 w-11 h-11 flex flex-col items-center justify-center gap-[5px] rounded"
             style={{
+              position: "absolute",
+              top: 26,
+              right: 26,
+              zIndex: 50,
               opacity: mPhase === "done" ? 1 : 0,
               pointerEvents: mPhase === "done" ? "auto" : "none",
               transition: "opacity 0.8s ease 0.3s",
-              background: "rgba(8,8,8,0.45)",
-              border: "1px solid rgba(201,168,76,0.30)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              gap: 7,
+              width: 30,
+              height: 22,
             }}
           >
-            <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
-            <span className="block w-3.5 h-[1.5px] rounded-sm self-start ml-3" style={{ background: "#C9A84C" }} />
-            <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
+            <span style={{ display: "block", width: 26, height: 1, background: "#F5F0E8", opacity: 0.82 }} />
+            <span style={{ display: "block", width: 18, height: 1, background: "#F5F0E8", opacity: 0.82 }} />
+            <span style={{ display: "block", width: 26, height: 1, background: "#F5F0E8", opacity: 0.82 }} />
           </button>
 
           {/* See more — appears when video ends */}
           <div
-            className="absolute z-50 flex flex-col items-center gap-2 pointer-events-none"
+            className="absolute z-50 flex flex-col items-center pointer-events-none"
             style={{
               opacity: mPhase === "done" ? 1 : 0,
               transition: "opacity 0.8s ease 0.6s",
-              bottom: "33%",
+              bottom: "30%",
               left: "50%",
               transform: "translateX(-50%)",
+              gap: "0.6rem",
             }}
           >
             <span
-              className="font-cinzel text-[11px] tracking-[0.25em] uppercase whitespace-nowrap"
-              style={{ color: "#F5F0E8", textShadow: "0 1px 14px rgba(0,0,0,0.9)" }}
+              className="font-cinzel whitespace-nowrap"
+              style={{
+                fontSize: 8,
+                letterSpacing: "0.48em",
+                color: "rgba(245,240,232,0.65)",
+                textTransform: "uppercase",
+                textShadow: "0 1px 20px rgba(0,0,0,0.95)",
+              }}
             >
               See more
             </span>
             <span
-              className="block w-px h-8"
-              style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2s ease-in-out infinite" }}
+              className="block w-px"
+              style={{
+                height: 34,
+                background: "linear-gradient(to bottom, rgba(201,168,76,0.7), transparent)",
+                animation: "pulse-line 2.2s ease-in-out infinite",
+              }}
             />
           </div>
 
