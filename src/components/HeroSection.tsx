@@ -6,9 +6,9 @@ import Image from "next/image";
 // ─────────────────────────────────────────────────────────────────
 //  CONFIG — edit these two lines after uploading your frames
 // ─────────────────────────────────────────────────────────────────
-const TOTAL_FRAMES = 100;
+const TOTAL_FRAMES = 150;
 const FRAME_URL    = (n: number) =>
-  `/frames/${String(n).padStart(4, "0")}.jpg`;
+  `/frames/${String(n).padStart(3, "0")}.png`;
 // ─────────────────────────────────────────────────────────────────
 
 const FADE_START  = 0.78;
