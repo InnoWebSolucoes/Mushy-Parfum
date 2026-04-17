@@ -1,42 +1,128 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 
-const FADE_START  = 0.78;   // video progress at which UI starts appearing
-const FADE_FINISH = 0.96;   // video progress at which UI is fully visible
+// ─────────────────────────────────────────────────────────────────
+//  CONFIG — edit these two lines after uploading your frames
+// ─────────────────────────────────────────────────────────────────
+const TOTAL_FRAMES = 100;
+const FRAME_URL    = (n: number) =>
+  `/frames/${String(n).padStart(4, "0")}.jpg`;
+// ─────────────────────────────────────────────────────────────────
+
+const FADE_START  = 0.78;
+const FADE_FINISH = 0.96;
 
 export default function HeroSection() {
   const heroRef    = useRef<HTMLElement>(null);
-  const videoRef   = useRef<HTMLVideoElement>(null);
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const seeMoreRef = useRef<HTMLButtonElement>(null);
   const logoRef    = useRef<HTMLDivElement>(null);
 
-  const started    = useRef(false);
+  // Frames array and load tracking (refs = no re-render on update)
+  const framesRef     = useRef<HTMLImageElement[]>([]);
+  const loadedRef     = useRef(0);
+
+  const [loadPct,  setLoadPct]  = useState(0);    // 0-100 for progress bar
+  const [ready,    setReady]    = useState(false); // all frames loaded
+
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // ── Cover-fit canvas draw ──────────────────────────────────────
+  const drawFrame = useCallback((img: HTMLImageElement) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !img.complete || !img.naturalWidth) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cw = canvas.width, ch = canvas.height;
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const scale = Math.max(cw / iw, ch / ih);
+    const dx = (cw - iw * scale) / 2;
+    const dy = (ch - ih * scale) / 2;
+    ctx.drawImage(img, dx, dy, iw * scale, ih * scale);
+  }, []);
+
+  // ── Preload all frames on mount ────────────────────────────────
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const imgs: HTMLImageElement[] = new Array(TOTAL_FRAMES);
+    framesRef.current = imgs;
+    loadedRef.current = 0;
 
-    // ── Start playing on first downward scroll ────────────────
-    const startVideo = () => {
-      if (started.current) return;
-      started.current = true;
-      video.play().catch(() => {});
-      window.removeEventListener("scroll", startVideo);
+    for (let i = 0; i < TOTAL_FRAMES; i++) {
+      const img = new window.Image();
+      img.src = FRAME_URL(i + 1);   // frames are 1-indexed
+
+      img.onload = () => {
+        loadedRef.current += 1;
+        const pct = Math.round((loadedRef.current / TOTAL_FRAMES) * 100);
+        setLoadPct(pct);
+
+        // Draw the very first frame as soon as it arrives
+        if (i === 0) drawFrame(img);
+
+        if (loadedRef.current === TOTAL_FRAMES) {
+          setReady(true);
+        }
+      };
+
+      img.onerror = () => {
+        // Count failed loads so the bar still completes
+        loadedRef.current += 1;
+        const pct = Math.round((loadedRef.current / TOTAL_FRAMES) * 100);
+        setLoadPct(pct);
+        if (loadedRef.current === TOTAL_FRAMES) setReady(true);
+      };
+
+      imgs[i] = img;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Canvas resize ──────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      // Redraw current frame after resize
+      const frames = framesRef.current;
+      if (frames.length > 0 && frames[0]?.complete) drawFrame(frames[0]);
     };
-    window.addEventListener("scroll", startVideo, { passive: true });
 
-    // ── Fade UI in based on video progress (timeupdate) ───────
-    // timeupdate fires ~4-66 times/sec — plenty for opacity fades
-    const onTimeUpdate = () => {
-      if (!video.duration) return;
-      const p = video.currentTime / video.duration;
+    resize();
+    window.addEventListener("resize", resize, { passive: true });
+    return () => window.removeEventListener("resize", resize);
+  }, [drawFrame]);
 
-      const rawOp = p >= FADE_START
-        ? (p - FADE_START) / (FADE_FINISH - FADE_START)
+  // ── Scroll → frame index + UI opacity ─────────────────────────
+  useEffect(() => {
+    if (!ready) return;
+
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const onScroll = () => {
+      const range = hero.offsetHeight - window.innerHeight;
+      const progress = range > 0
+        ? Math.max(0, Math.min(window.scrollY / range, 1))
+        : 0;
+
+      // Draw the correct frame — synchronous, instant
+      const idx = Math.min(
+        Math.floor(progress * TOTAL_FRAMES),
+        TOTAL_FRAMES - 1
+      );
+      const frame = framesRef.current[idx];
+      if (frame) drawFrame(frame);
+
+      // UI opacity — direct DOM, zero React re-renders
+      const rawOp = progress >= FADE_START
+        ? (progress - FADE_START) / (FADE_FINISH - FADE_START)
         : 0;
       const op = String(Math.min(rawOp, 1));
       const pe = parseFloat(op) > 0.4 ? "auto" : "none";
@@ -53,26 +139,13 @@ export default function HeroSection() {
         logoRef.current.style.opacity = op;
       }
     };
-    video.addEventListener("timeupdate", onTimeUpdate);
 
-    // Ensure fully visible once video ends
-    const onEnded = () => {
-      [menuBtnRef, seeMoreRef, logoRef].forEach(r => {
-        if (r.current) {
-          r.current.style.opacity       = "1";
-          (r.current as HTMLElement).style.pointerEvents = "auto";
-        }
-      });
-    };
-    video.addEventListener("ended", onEnded);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll(); // run once to paint frame 0 at initial position
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [ready, drawFrame]);
 
-    return () => {
-      window.removeEventListener("scroll", startVideo);
-      video.removeEventListener("timeupdate", onTimeUpdate);
-      video.removeEventListener("ended",      onEnded);
-    };
-  }, []);
-
+  // ── Menu body-scroll lock ──────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -86,23 +159,51 @@ export default function HeroSection() {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════
-          HERO — tall scroll zone keeps the sticky panel visible
-          while the video plays at native speed
+          HERO — 500 vh scroll zone
       ═══════════════════════════════════════════════════════ */}
       <section ref={heroRef} style={{ height: "500vh" }} className="relative">
         <div className="sticky top-0 overflow-hidden" style={{ height: "100svh" }}>
 
-          {/* Video — plays natively, no seeking */}
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            preload="auto"
-            disablePictureInPicture
-            className="absolute inset-0 w-full h-full object-cover"
+          {/* Canvas — the visible surface, painted from pre-loaded frames */}
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0"
+            style={{ width: "100%", height: "100%", display: "block" }}
+          />
+
+          {/* Loading overlay — fades out once all frames are ready */}
+          <div
+            className="absolute inset-0 z-40 flex flex-col items-center justify-center"
+            style={{
+              background: "#080808",
+              opacity: ready ? 0 : 1,
+              pointerEvents: ready ? "none" : "auto",
+              transition: "opacity 0.8s ease",
+            }}
           >
-            <source src="/hero.mp4" type="video/mp4" />
-          </video>
+            {/* Gold progress bar */}
+            <div
+              className="relative overflow-hidden rounded-full"
+              style={{ width: 160, height: 1, background: "rgba(201,168,76,0.2)" }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "#C9A84C",
+                  transform: `scaleX(${loadPct / 100})`,
+                  transformOrigin: "left",
+                  transition: "transform 0.2s ease",
+                }}
+              />
+            </div>
+            <p
+              className="font-cinzel mt-4"
+              style={{ fontSize: 10, letterSpacing: "0.3em", color: "rgba(201,168,76,0.5)" }}
+            >
+              {loadPct < 100 ? "LOADING" : ""}
+            </p>
+          </div>
 
           {/* Edge vignette */}
           <div
@@ -123,7 +224,7 @@ export default function HeroSection() {
             ref={logoRef}
             aria-hidden="true"
             className="absolute top-5 left-5 z-50 pointer-events-none"
-            style={{ opacity: 0, transition: "opacity 0.6s ease" }}
+            style={{ opacity: 0, transition: "opacity 0.5s ease" }}
           >
             <Image
               src="/logo.jpeg"
@@ -144,7 +245,7 @@ export default function HeroSection() {
             style={{
               opacity: 0,
               pointerEvents: "none",
-              transition: "opacity 0.6s ease",
+              transition: "opacity 0.5s ease",
               background: "rgba(8,8,8,0.45)",
               border: "1px solid rgba(201,168,76,0.30)",
               backdropFilter: "blur(8px)",
@@ -165,7 +266,7 @@ export default function HeroSection() {
             style={{
               opacity: 0,
               pointerEvents: "none",
-              transition: "opacity 0.7s ease",
+              transition: "opacity 0.5s ease",
               bottom: "33%",
               left: "50%",
               transform: "translateX(-50%)",
