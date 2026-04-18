@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Josefin+Sans:wght@100;200;300&display=swap");
 @import "tailwindcss";
 
 *, *::before, *::after {
@@ -12,22 +12,30 @@ html {
 }
 
 body {
-  background: #080808;
-  color: #F5F0E8;
-  font-family: "Cormorant Garamond", serif;
+  background: #09090B;
+  color: #EEEAE2;
+  font-family: "Josefin Sans", sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .font-cinzel    { font-family: "Cinzel", serif; }
 .font-cormorant { font-family: "Cormorant Garamond", serif; }
+.font-playfair  { font-family: "Playfair Display", serif; }
+.font-josefin   { font-family: "Josefin Sans", sans-serif; }
 
 @keyframes pulse-line {
-  0%, 100% { opacity: 0.6; transform: scaleY(1); }
-  50%       { opacity: 1;   transform: scaleY(1.15); }
+  0%, 100% { opacity: 0.5; transform: scaleY(1); }
+  50%       { opacity: 0.9; transform: scaleY(1.12); }
 }
 
 @keyframes pulse-fade {
-  0%, 100% { opacity: 0.35; }
-  50%       { opacity: 0.75; }
+  0%, 100% { opacity: 0.28; }
+  50%       { opacity: 0.65; }
+}
+
+@keyframes drift-up {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
 }

@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 
-// ── Desktop animation config ──────────────────────────────────────
+// ── Desktop config ─────────────────────────────────────────────────
 const TOTAL_FRAMES  = 150;
 const FRAME_URL     = (n: number) => `/frames/${String(n).padStart(3, "0")}.jpg`;
 const FADE_START    = 0.78;
@@ -11,6 +11,15 @@ const FADE_FINISH   = 0.96;
 const TEXT_FADE_END = 0.05;
 
 const GRAIN = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+
+// Design tokens
+const C = {
+  bg:      "#09090B",
+  cream:   "#EEEAE2",
+  gold:    "#C4A35A",
+  goldDim: "rgba(196,163,90,0.55)",
+  dim:     "rgba(238,234,226,0.38)",
+};
 
 type MobilePhase = "intro" | "video" | "done";
 
@@ -20,7 +29,7 @@ export default function HeroSection() {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // ── Desktop ───────────────────────────────────────────────────────
+  // ── Desktop refs ──────────────────────────────────────────────────
   const heroRef       = useRef<HTMLElement>(null);
   const canvasRef     = useRef<HTMLCanvasElement>(null);
   const dMenuBtnRef   = useRef<HTMLButtonElement>(null);
@@ -33,23 +42,22 @@ export default function HeroSection() {
   const [loadPct, setLoadPct] = useState(0);
   const [ready,   setReady]   = useState(false);
 
-  // ── Mobile ────────────────────────────────────────────────────────
+  // ── Mobile state ──────────────────────────────────────────────────
   const mVideoRef     = useRef<HTMLVideoElement>(null);
   const [mPhase,      setMPhase]      = useState<MobilePhase>("intro");
   const [mIntroShown, setMIntroShown] = useState(false);
-  const [mUIShown,    setMUIShown]    = useState(false); // logo + nav appear mid-video
+  const [mUIShown,    setMUIShown]    = useState(false);
 
-  // ── Detect device ─────────────────────────────────────────────────
   useEffect(() => { setIsMobile(window.innerWidth < 768); }, []);
 
-  // ── Cover-fit draw (desktop) ──────────────────────────────────────
+  // ── Desktop: cover-fit draw ───────────────────────────────────────
   const drawFrame = useCallback((img: HTMLImageElement) => {
     const canvas = canvasRef.current;
     if (!canvas || !img.complete || !img.naturalWidth) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const cw = canvas.width, ch = canvas.height;
-    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const { width: cw, height: ch } = canvas;
+    const { naturalWidth: iw, naturalHeight: ih } = img;
     const scale = Math.max(cw / iw, ch / ih);
     ctx.drawImage(img, (cw - iw * scale) / 2, (ch - ih * scale) / 2, iw * scale, ih * scale);
   }, []);
@@ -64,13 +72,13 @@ export default function HeroSection() {
       const img = new window.Image();
       img.src = FRAME_URL(i + 1);
       img.onload = () => {
-        loadedRef.current += 1;
+        loadedRef.current++;
         setLoadPct(Math.round((loadedRef.current / TOTAL_FRAMES) * 100));
         if (i === 0) drawFrame(img);
         if (loadedRef.current === TOTAL_FRAMES) setReady(true);
       };
       img.onerror = () => {
-        loadedRef.current += 1;
+        loadedRef.current++;
         setLoadPct(Math.round((loadedRef.current / TOTAL_FRAMES) * 100));
         if (loadedRef.current === TOTAL_FRAMES) setReady(true);
       };
@@ -95,7 +103,7 @@ export default function HeroSection() {
     return () => window.removeEventListener("resize", resize);
   }, [isMobile, drawFrame]);
 
-  // ── Desktop: intro text fade-in ───────────────────────────────────
+  // ── Desktop: intro fade-in ────────────────────────────────────────
   useEffect(() => {
     if (!ready) return;
     const el = dIntroRef.current;
@@ -104,7 +112,7 @@ export default function HeroSection() {
     requestAnimationFrame(() => { el.style.opacity = "1"; });
   }, [ready]);
 
-  // ── Desktop: scroll → frames + UI ────────────────────────────────
+  // ── Desktop: scroll handler ───────────────────────────────────────
   useEffect(() => {
     if (isMobile !== false || !ready) return;
     const hero = heroRef.current;
@@ -117,9 +125,8 @@ export default function HeroSection() {
       const frame = framesRef.current[idx];
       if (frame) drawFrame(frame);
       if (dIntroRef.current && window.scrollY > 0) {
-        const tOp = Math.max(0, 1 - progress / TEXT_FADE_END);
         dIntroRef.current.style.transition = "";
-        dIntroRef.current.style.opacity    = String(tOp);
+        dIntroRef.current.style.opacity = String(Math.max(0, 1 - progress / TEXT_FADE_END));
       }
       const rawOp = progress >= FADE_START ? (progress - FADE_START) / (FADE_FINISH - FADE_START) : 0;
       const op = String(Math.min(rawOp, 1));
@@ -133,14 +140,14 @@ export default function HeroSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isMobile, ready, drawFrame]);
 
-  // ── Mobile: intro text fade-in ────────────────────────────────────
+  // ── Mobile: show intro text ───────────────────────────────────────
   useEffect(() => {
     if (isMobile !== true) return;
-    const t = setTimeout(() => setMIntroShown(true), 300);
+    const t = setTimeout(() => setMIntroShown(true), 200);
     return () => clearTimeout(t);
   }, [isMobile]);
 
-  // ── Mobile: first scroll → video ─────────────────────────────────
+  // ── Mobile: first touch → video ──────────────────────────────────
   useEffect(() => {
     if (isMobile !== true || mPhase !== "intro") return;
     const trigger = () => setMPhase("video");
@@ -158,18 +165,17 @@ export default function HeroSection() {
     mVideoRef.current?.play().catch(() => {});
   }, [mPhase]);
 
-  // ── Mobile: reveal UI at 65% of video ────────────────────────────
+  // ── Mobile: show chrome at 65% of video ──────────────────────────
   useEffect(() => {
     if (mPhase !== "video") return;
     const video = mVideoRef.current;
     if (!video) return;
-    const onTime = () => {
+    const check = () => {
       if (mUIShown) return;
-      const pct = video.duration > 0 ? video.currentTime / video.duration : 0;
-      if (pct >= 0.65) setMUIShown(true);
+      if (video.duration > 0 && video.currentTime / video.duration >= 0.65) setMUIShown(true);
     };
-    video.addEventListener("timeupdate", onTime, { passive: true });
-    return () => video.removeEventListener("timeupdate", onTime);
+    video.addEventListener("timeupdate", check, { passive: true });
+    return () => video.removeEventListener("timeupdate", check);
   }, [mPhase, mUIShown]);
 
   // ── Menu scroll lock ──────────────────────────────────────────────
@@ -183,7 +189,7 @@ export default function HeroSection() {
   };
 
   // ═══════════════════════════════════════════════════════════════════
-  // MENU OVERLAY
+  // MENU — slides up from bottom
   // ═══════════════════════════════════════════════════════════════════
   const renderMenu = () => (
     <div
@@ -194,37 +200,53 @@ export default function HeroSection() {
         position: "fixed",
         inset: 0,
         zIndex: 200,
-        background: "#080706",
-        transform: menuOpen ? "translateX(0)" : "translateX(100%)",
+        background: C.bg,
+        transform: menuOpen ? "translateY(0)" : "translateY(100%)",
         transition: "transform 0.72s cubic-bezier(0.76,0,0.24,1)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {/* Grain */}
+      {/* Subtle grain */}
       <div aria-hidden="true" style={{
         position: "absolute", inset: 0, pointerEvents: "none",
-        opacity: 0.03, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+        opacity: 0.025, backgroundImage: GRAIN, backgroundSize: "200px 200px",
       }} />
 
-      {/* Close — bare, top-right, no container */}
-      <button
-        onClick={() => setMenuOpen(false)}
-        aria-label="Close menu"
-        style={{
-          position: "absolute", top: 32, right: 32, zIndex: 1,
-          background: "none", border: "none", padding: 0, cursor: "pointer",
-          fontFamily: '"Cormorant Garamond", serif',
-          fontStyle: "italic", fontSize: 30, fontWeight: 300,
-          color: "rgba(230,223,210,0.32)", lineHeight: 1,
-        }}
-      >×</button>
+      {/* Top bar: just the close label */}
+      <div style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        padding: "36px 36px 0",
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close menu"
+          style={{
+            background: "none", border: "none", padding: 0, cursor: "pointer",
+            fontFamily: '"Josefin Sans", sans-serif',
+            fontWeight: 100,
+            fontSize: 9,
+            letterSpacing: "0.5em",
+            textTransform: "uppercase",
+            color: C.dim,
+            lineHeight: 1,
+            paddingRight: "0.5em",
+          }}
+        >
+          Close
+        </button>
+      </div>
 
-      {/* Nav — anchored to bottom of screen */}
+      {/* Nav — vertically centered, left-aligned */}
       <nav style={{
-        position: "absolute",
-        bottom: "11vh",
-        left: 0,
-        right: 0,
-        padding: "0 36px",
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        padding: "0 40px",
+        gap: 0,
       }}>
         {["Collections", "About", "Stockists", "Contact"].map((label, i) => (
           <a
@@ -233,39 +255,61 @@ export default function HeroSection() {
             onClick={() => setMenuOpen(false)}
             style={{
               display: "block",
-              fontFamily: '"Cormorant Garamond", serif',
-              fontStyle: "italic",
-              fontSize: "clamp(44px, 13vw, 60px)",
-              fontWeight: 300,
-              letterSpacing: "0.01em",
-              color: "#E6DFD2",
+              fontFamily: '"Playfair Display", serif',
+              fontSize: "clamp(40px, 11.5vw, 54px)",
+              fontWeight: 400,
+              letterSpacing: "-0.01em",
+              color: C.cream,
               textDecoration: "none",
-              lineHeight: 1.18,
+              lineHeight: 1.22,
+              borderBottom: `1px solid rgba(238,234,226,0.07)`,
+              padding: "0.22em 0",
               opacity: menuOpen ? 1 : 0,
-              transform: menuOpen ? "translateY(0)" : "translateY(24px)",
-              transition: `opacity 0.5s ease ${0.04 + i * 0.09}s, transform 0.65s cubic-bezier(0.16,1,0.3,1) ${0.04 + i * 0.09}s`,
+              transform: menuOpen ? "translateY(0)" : "translateY(20px)",
+              transition: `opacity 0.55s ease ${0.06 + i * 0.09}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${0.06 + i * 0.09}s`,
             }}
           >
             {label}
           </a>
         ))}
-
-        {/* Thin gold rule after items */}
-        <div style={{
-          marginTop: "1.4em",
-          width: 28,
-          height: 1,
-          background: "rgba(196,158,82,0.28)",
-          opacity: menuOpen ? 1 : 0,
-          transition: "opacity 0.5s ease 0.42s",
-        }} />
       </nav>
+
+      {/* Footer: year + brand name ultra-small */}
+      <div style={{
+        padding: "0 40px 40px",
+        flexShrink: 0,
+        opacity: menuOpen ? 1 : 0,
+        transition: "opacity 0.5s ease 0.44s",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <span style={{
+            fontFamily: '"Josefin Sans", sans-serif',
+            fontWeight: 100,
+            fontSize: 8,
+            letterSpacing: "0.38em",
+            textTransform: "uppercase",
+            color: "rgba(238,234,226,0.15)",
+            paddingRight: "0.38em",
+          }}>
+            Mushy Parfum
+          </span>
+          <span style={{
+            fontFamily: '"Josefin Sans", sans-serif',
+            fontWeight: 100,
+            fontSize: 8,
+            letterSpacing: "0.2em",
+            color: "rgba(238,234,226,0.1)",
+          }}>
+            Est. 2024
+          </span>
+        </div>
+      </div>
     </div>
   );
 
   // ── Before hydration ──────────────────────────────────────────────
   if (isMobile === null) {
-    return <div style={{ height: "100svh", background: "#080706" }} />;
+    return <div style={{ height: "100svh", background: C.bg }} />;
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -276,15 +320,15 @@ export default function HeroSection() {
 
     return (
       <>
-        <section style={{ height: "100svh", background: "#080706", position: "relative", overflow: "hidden" }}>
+        <section style={{ height: "100svh", background: C.bg, position: "relative", overflow: "hidden" }}>
 
-          {/* Grain */}
+          {/* Grain overlay */}
           <div aria-hidden="true" style={{
-            position: "absolute", inset: 0, zIndex: 8, pointerEvents: "none",
-            opacity: 0.034, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+            position: "absolute", inset: 0, zIndex: 9, pointerEvents: "none",
+            opacity: 0.032, backgroundImage: GRAIN, backgroundSize: "200px 200px",
           }} />
 
-          {/* Video — slow cinematic bleed-in */}
+          {/* Video */}
           <video
             ref={mVideoRef}
             src="/mobile-hero.mp4"
@@ -293,155 +337,128 @@ export default function HeroSection() {
             preload="auto"
             onEnded={() => setMPhase("done")}
             style={{
-              position: "absolute", inset: 0, width: "100%", height: "100%",
+              position: "absolute", inset: 0,
+              width: "100%", height: "100%",
               objectFit: "cover", zIndex: 1,
               opacity: mPhase !== "intro" ? 1 : 0,
-              transition: "opacity 3.5s ease",
+              transition: "opacity 3.8s ease",
             }}
           />
 
-          {/* Video vignette — fades in with video */}
+          {/* Vignette over video */}
           <div aria-hidden="true" style={{
             position: "absolute", inset: 0, zIndex: 7, pointerEvents: "none",
             opacity: mPhase !== "intro" ? 1 : 0,
-            transition: "opacity 3.5s ease",
+            transition: "opacity 3.8s ease",
             background: [
-              "linear-gradient(to bottom, rgba(8,7,6,0.5) 0%, transparent 30%)",
-              "linear-gradient(to top,   rgba(8,7,6,0.6) 0%, transparent 35%)",
+              "linear-gradient(to bottom, rgba(9,9,11,0.55) 0%, transparent 25%)",
+              "linear-gradient(to top,    rgba(9,9,11,0.65) 0%, transparent 30%)",
             ].join(","),
           }} />
 
-          {/* ── INTRO ──────────────────────────────────────────────── */}
-          <div style={{
-            position: "absolute",
-            bottom: "22vh",
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            padding: "0 36px",
-            pointerEvents: "none",
-            opacity: mPhase === "intro" ? 1 : 0,
-            transform: mPhase !== "intro" ? "translateY(-28px)" : "translateY(0)",
-            transition: mPhase !== "intro"
-              ? "opacity 0.5s ease, transform 0.75s cubic-bezier(0.4,0,0.2,1)"
-              : "none",
-          }}>
-            {/* MUSHY — per-letter stagger */}
-            <h1 style={{
-              fontFamily: '"Cinzel", serif',
-              fontSize: "clamp(58px, 17.5vw, 78px)",
-              fontWeight: 400,
-              letterSpacing: "0.17em",
-              color: "#E6DFD2",
-              textTransform: "uppercase",
-              lineHeight: 1,
-              margin: 0,
-              paddingRight: "0.17em", // offset trailing letter-spacing
-            }}>
-              {"MUSHY".split("").map((char, i) => (
-                <span
-                  key={i}
-                  style={{
-                    display: "inline-block",
-                    opacity: mIntroShown ? 1 : 0,
-                    transform: mIntroShown ? "translateY(0)" : "translateY(16px)",
-                    transition: `opacity 0.65s ease ${0.1 + i * 0.055}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.055}s`,
-                  }}
-                >
-                  {char}
-                </span>
-              ))}
-            </h1>
+          {/* ═══ INTRO ════════════════════════════════════════════════ */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              padding: "0 36px",
+              paddingBottom: "8vh",
+              pointerEvents: "none",
+              opacity: mPhase === "intro" ? (mIntroShown ? 1 : 0) : 0,
+              transition: mPhase !== "intro"
+                ? "opacity 0.6s ease"
+                : "opacity 1.8s ease",
+            }}
+          >
+            {/* Brand name — Playfair Display, the whole block fades as one unit */}
+            <div>
+              <h1 style={{
+                fontFamily: '"Playfair Display", serif',
+                fontSize: "clamp(72px, 22vw, 96px)",
+                fontWeight: 700,
+                color: C.cream,
+                letterSpacing: "-0.025em",
+                lineHeight: 0.88,
+                margin: 0,
+              }}>
+                Mushy
+              </h1>
+              <p style={{
+                fontFamily: '"Josefin Sans", sans-serif',
+                fontWeight: 100,
+                fontSize: "clamp(11px, 3.2vw, 15px)",
+                letterSpacing: "0.68em",
+                textTransform: "uppercase",
+                color: C.goldDim,
+                margin: "18px 0 0 4px",
+                paddingRight: "0.68em",
+                lineHeight: 1,
+              }}>
+                Parfum
+              </p>
+            </div>
 
-            {/* Parfum — slides in from left, italic contrast */}
-            <p style={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontStyle: "italic",
-              fontSize: "clamp(25px, 7.5vw, 35px)",
-              fontWeight: 300,
-              letterSpacing: "0.18em",
-              color: "rgba(196,158,82,0.8)",
-              margin: "6px 0 0",
-              lineHeight: 1,
-              opacity: mIntroShown ? 1 : 0,
-              transform: mIntroShown ? "translateX(0)" : "translateX(-20px)",
-              transition: "opacity 0.85s ease 0.44s, transform 0.85s cubic-bezier(0.16,1,0.3,1) 0.44s",
-            }}>
-              Parfum
-            </p>
-          </div>
-
-          {/* Vertical scroll indicator — right edge */}
-          <div style={{
-            position: "absolute",
-            right: 26,
-            bottom: "13vh",
-            zIndex: 10,
-            pointerEvents: "none",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 10,
-            opacity: mPhase === "intro" && mIntroShown ? 0.3 : 0,
-            transform: mPhase !== "intro" ? "translateY(-16px)" : "translateY(0)",
-            transition: mPhase !== "intro"
-              ? "opacity 0.4s ease, transform 0.6s ease"
-              : "opacity 1.5s ease 0.95s, transform 0.6s ease",
-          }}>
-            <span style={{
-              fontFamily: '"Cinzel", serif',
-              fontSize: 6.5,
-              letterSpacing: "0.44em",
-              color: "#E6DFD2",
-              textTransform: "uppercase",
-              writingMode: "vertical-rl",
-              textOrientation: "mixed",
-              paddingBottom: "0.44em",
-            }}>
-              Scroll
-            </span>
+            {/* Scroll hint — absolute, bottom of intro container */}
             <div style={{
-              width: 1, height: 38,
-              background: "linear-gradient(to bottom, rgba(196,158,82,0.5), transparent)",
-              animation: mIntroShown ? "pulse-line 2.8s ease-in-out infinite" : "none",
-            }} />
+              position: "absolute",
+              bottom: "9vh",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              <div style={{
+                width: 1,
+                height: 44,
+                background: `linear-gradient(to bottom, ${C.goldDim}, transparent)`,
+                animation: "pulse-line 2.6s ease-in-out infinite",
+              }} />
+            </div>
           </div>
 
-          {/* ── POST-VIDEO UI ───────────────────────────────────── */}
+          {/* ═══ POST-VIDEO CHROME ════════════════════════════════════ */}
 
-          {/* Logo — fades in at 65% of video */}
+          {/* Logo — top left */}
           <div style={{
             position: "absolute", top: 28, left: 28, zIndex: 50,
             opacity: uiVisible ? 1 : 0,
-            transition: "opacity 1.4s ease",
+            transition: "opacity 1.6s ease",
             pointerEvents: "none",
           }}>
             <Image
               src="/logo.jpeg"
               alt="Mushy Parfum"
-              width={36}
-              height={36}
+              width={34}
+              height={34}
               className="rounded"
-              style={{ opacity: 0.9 }}
+              style={{ opacity: 0.92 }}
             />
           </div>
 
-          {/* Hamburger — fades in at 65% of video */}
+          {/* Hamburger — top right, bare */}
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             style={{
-              position: "absolute", top: 30, right: 28, zIndex: 50,
+              position: "absolute", top: 32, right: 30, zIndex: 50,
               opacity: uiVisible ? 1 : 0,
               pointerEvents: uiVisible ? "auto" : "none",
-              transition: "opacity 1.4s ease",
+              transition: "opacity 1.6s ease",
               background: "none", border: "none", padding: 0, cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 7,
+              display: "flex", flexDirection: "column",
+              alignItems: "flex-end",
+              gap: 6,
             }}
           >
-            <span style={{ display: "block", width: 26, height: 1, background: "#E6DFD2", opacity: 0.68 }} />
-            <span style={{ display: "block", width: 18, height: 1, background: "#E6DFD2", opacity: 0.68 }} />
-            <span style={{ display: "block", width: 26, height: 1, background: "#E6DFD2", opacity: 0.68 }} />
+            <span style={{ display: "block", width: 24, height: 1, background: C.cream, opacity: 0.7 }} />
+            <span style={{ display: "block", width: 16, height: 1, background: C.cream, opacity: 0.7 }} />
+            <span style={{ display: "block", width: 24, height: 1, background: C.cream, opacity: 0.7 }} />
           </button>
 
         </section>
@@ -452,7 +469,7 @@ export default function HeroSection() {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // DESKTOP — scroll-driven frame animation
+  // DESKTOP — scroll-driven frame animation (unchanged)
   // ═══════════════════════════════════════════════════════════════════
   return (
     <>
@@ -475,101 +492,118 @@ export default function HeroSection() {
               transition: "opacity 0.8s ease",
             }}
           >
-            <div
-              className="relative overflow-hidden rounded-full"
-              style={{ width: 160, height: 1, background: "rgba(201,168,76,0.2)" }}
-            >
-              <div style={{ position: "absolute", inset: 0, background: "#C9A84C", transform: `scaleX(${loadPct / 100})`, transformOrigin: "left", transition: "transform 0.2s ease" }} />
+            <div className="relative overflow-hidden" style={{ width: 140, height: 1, background: "rgba(196,163,90,0.18)" }}>
+              <div style={{ position: "absolute", inset: 0, background: C.gold, transform: `scaleX(${loadPct / 100})`, transformOrigin: "left", transition: "transform 0.2s ease" }} />
             </div>
-            <p className="font-cinzel mt-4" style={{ fontSize: 10, letterSpacing: "0.3em", color: "rgba(201,168,76,0.5)" }}>
+            <p style={{ fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 9, letterSpacing: "0.4em", color: "rgba(196,163,90,0.45)", marginTop: 14 }}>
               {loadPct < 100 ? "LOADING" : ""}
             </p>
           </div>
 
           {/* Edge vignette */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: [
-                "radial-gradient(ellipse 130% 55% at 50% 0%,    rgba(8,8,8,0.60) 0%, transparent 70%)",
-                "radial-gradient(ellipse 130% 45% at 50% 100%,  rgba(8,8,8,0.75) 0%, transparent 70%)",
-                "radial-gradient(ellipse 35%  100% at 0%   50%, rgba(8,8,8,0.35) 0%, transparent 60%)",
-                "radial-gradient(ellipse 35%  100% at 100% 50%, rgba(8,8,8,0.35) 0%, transparent 60%)",
-              ].join(","),
-            }}
-          />
+          <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
+            background: [
+              "radial-gradient(ellipse 130% 55% at 50% 0%,    rgba(9,9,11,0.65) 0%, transparent 70%)",
+              "radial-gradient(ellipse 130% 45% at 50% 100%,  rgba(9,9,11,0.75) 0%, transparent 70%)",
+              "radial-gradient(ellipse 35%  100% at 0%   50%, rgba(9,9,11,0.35) 0%, transparent 60%)",
+              "radial-gradient(ellipse 35%  100% at 100% 50%, rgba(9,9,11,0.35) 0%, transparent 60%)",
+            ].join(","),
+          }} />
 
           {/* Desktop intro text */}
           <div
             ref={dIntroRef}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none"
-            style={{ opacity: 0 }}
+            className="absolute inset-0 z-20 pointer-events-none"
+            style={{ opacity: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 8vw" }}
           >
-            <p className="font-cinzel" style={{ fontSize: 10, letterSpacing: "0.45em", color: "#8B7355", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-              The House of
-            </p>
-            <h1 className="font-cormorant" style={{ fontSize: "clamp(44px, 12vw, 64px)", fontWeight: 300, letterSpacing: "-0.01em", color: "#F5F0E8", lineHeight: 1, textShadow: "0 2px 40px rgba(0,0,0,0.7)" }}>
-              Mushy Parfum
+            <h1 style={{
+              fontFamily: '"Playfair Display", serif',
+              fontSize: "clamp(56px, 8vw, 90px)",
+              fontWeight: 700,
+              color: C.cream,
+              letterSpacing: "-0.025em",
+              lineHeight: 0.9,
+              margin: 0,
+            }}>
+              Mushy
             </h1>
-            <div style={{ marginTop: "3.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-              <span className="font-cinzel" style={{ fontSize: 9, letterSpacing: "0.35em", color: "rgba(245,240,232,0.45)", textTransform: "uppercase", animation: "pulse-fade 2.5s ease-in-out infinite" }}>
+            <p style={{
+              fontFamily: '"Josefin Sans", sans-serif',
+              fontWeight: 100,
+              fontSize: "clamp(10px, 1.1vw, 14px)",
+              letterSpacing: "0.65em",
+              textTransform: "uppercase",
+              color: C.goldDim,
+              margin: "20px 0 0 4px",
+              paddingRight: "0.65em",
+            }}>
+              Parfum
+            </p>
+            <div style={{ marginTop: "3.5rem", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.6rem" }}>
+              <span style={{
+                fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
+                fontSize: 9, letterSpacing: "0.45em", textTransform: "uppercase",
+                color: "rgba(238,234,226,0.35)", paddingRight: "0.45em",
+                animation: "pulse-fade 2.5s ease-in-out infinite",
+              }}>
                 Scroll to discover
               </span>
-              <span className="block w-px h-8" style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2.5s ease-in-out infinite" }} />
+              <span style={{
+                display: "block", width: 1, height: 36,
+                background: `linear-gradient(to bottom, ${C.gold}, transparent)`,
+                animation: "pulse-line 2.5s ease-in-out infinite",
+              }} />
             </div>
           </div>
 
-          {/* Logo */}
-          <div
-            ref={dLogoRef}
-            aria-hidden="true"
-            className="absolute top-5 left-5 z-50 pointer-events-none"
-            style={{ opacity: 0, transition: "opacity 0.5s ease" }}
-          >
-            <Image src="/logo.jpeg" alt="Mushy Parfum" width={44} height={44} className="rounded" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }} />
+          {/* Desktop: Logo */}
+          <div ref={dLogoRef} className="absolute top-6 left-6 z-50 pointer-events-none" style={{ opacity: 0, transition: "opacity 0.5s ease" }}>
+            <Image src="/logo.jpeg" alt="Mushy Parfum" width={40} height={40} className="rounded" />
           </div>
 
-          {/* Menu button */}
+          {/* Desktop: menu button */}
           <button
             ref={dMenuBtnRef}
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
-            className="absolute top-5 right-5 z-50 w-11 h-11 flex flex-col items-center justify-center gap-[5px] rounded"
             style={{
-              opacity: 0,
-              pointerEvents: "none",
-              transition: "opacity 0.5s ease",
-              background: "rgba(8,8,8,0.45)",
-              border: "1px solid rgba(201,168,76,0.30)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
+              position: "absolute", top: 28, right: 28, zIndex: 50,
+              opacity: 0, pointerEvents: "none", transition: "opacity 0.5s ease",
+              background: "none", border: "none", cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, padding: 0,
             }}
           >
-            <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
-            <span className="block w-3.5 h-[1.5px] rounded-sm self-start ml-3" style={{ background: "#C9A84C" }} />
-            <span className="block w-5 h-[1.5px] rounded-sm" style={{ background: "#C9A84C" }} />
+            <span style={{ display: "block", width: 26, height: 1, background: C.cream, opacity: 0.65 }} />
+            <span style={{ display: "block", width: 18, height: 1, background: C.cream, opacity: 0.65 }} />
+            <span style={{ display: "block", width: 26, height: 1, background: C.cream, opacity: 0.65 }} />
           </button>
 
-          {/* See more */}
+          {/* Desktop: see more */}
           <button
             ref={dSeeMoreRef}
             onClick={scrollToContent}
             aria-label="See more"
-            className="absolute z-50 flex flex-col items-center gap-2 bg-transparent border-none cursor-pointer"
             style={{
-              opacity: 0,
-              pointerEvents: "none",
-              transition: "opacity 0.5s ease",
-              bottom: "33%",
-              left: "50%",
-              transform: "translateX(-50%)",
+              position: "absolute", bottom: "30%", left: "50%", transform: "translateX(-50%)",
+              zIndex: 50, opacity: 0, pointerEvents: "none", transition: "opacity 0.5s ease",
+              background: "none", border: "none", cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
             }}
           >
-            <span className="font-cinzel text-[11px] tracking-[0.25em] uppercase whitespace-nowrap" style={{ color: "#F5F0E8", textShadow: "0 1px 14px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.6)" }}>
+            <span style={{
+              fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
+              fontSize: 9, letterSpacing: "0.45em", textTransform: "uppercase",
+              color: C.cream, paddingRight: "0.45em",
+              textShadow: "0 1px 16px rgba(0,0,0,0.9)",
+              whiteSpace: "nowrap",
+            }}>
               See more
             </span>
-            <span className="block w-px h-8" style={{ background: "linear-gradient(to bottom, #C9A84C, transparent)", animation: "pulse-line 2s ease-in-out infinite" }} />
+            <span style={{
+              display: "block", width: 1, height: 32,
+              background: `linear-gradient(to bottom, ${C.gold}, transparent)`,
+              animation: "pulse-line 2s ease-in-out infinite",
+            }} />
           </button>
 
         </div>
