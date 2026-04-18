@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 const GRAIN = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
@@ -129,7 +129,7 @@ function FullRow({ item }: { item: (typeof STORY)[2] }) {
   return (
     <div ref={wrapRef} style={{
       position: "relative", height: "70vw", maxHeight: 400,
-      overflow: "hidden", margin: "0 0 4px",
+      overflow: "hidden",
     }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -173,7 +173,7 @@ function HalfRow({ item }: { item: (typeof STORY)[0] }) {
   return (
     <div style={{
       display: "flex", flexDirection: imgLeft ? "row" : "row-reverse",
-      height: "clamp(240px, 60vw, 300px)", margin: "4px 0", gap: 4,
+      height: "clamp(260px, 65vw, 340px)", gap: 3,
     }}>
       {/* Image */}
       <div ref={imgRef} style={{ flex: "0 0 48%", position: "relative", overflow: "hidden" }}>
@@ -258,12 +258,31 @@ export default function MobileGallery() {
       <Header />
 
       {/* Story rows */}
-      <div style={{ position: "relative", zIndex: 1 }}>
-        {STORY.map((item, i) =>
-          item.layout === "full"
-            ? <FullRow key={i} item={item as (typeof STORY)[2]} />
-            : <HalfRow key={i} item={item as (typeof STORY)[0]} />
-        )}
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+        {STORY.map((item, i) => (
+          <React.Fragment key={i}>
+            {item.layout === "full"
+              ? <FullRow item={item as (typeof STORY)[2]} />
+              : <HalfRow item={item as (typeof STORY)[0]} />
+            }
+            {/* Luxurious interlude after second row */}
+            {i === 1 && (
+              <div style={{
+                padding: "72px 36px",
+                textAlign: "center",
+                background: C.bg,
+              }}>
+                <div style={{ width: 1, height: 52, background: `linear-gradient(to bottom, transparent, ${C.gold}55)`, margin: "0 auto 28px" }} />
+                <p style={{
+                  fontFamily: '"Cormorant Garamond", serif', fontStyle: "italic", fontWeight: 300,
+                  fontSize: "clamp(18px, 5.5vw, 22px)", lineHeight: 1.6,
+                  color: "rgba(238,234,226,0.38)", margin: "0 0 28px", letterSpacing: "0.02em",
+                }}>"O aroma certo é aquele<br />que nunca é esquecido."</p>
+                <div style={{ width: 1, height: 52, background: `linear-gradient(to bottom, ${C.gold}55, transparent)`, margin: "0 auto" }} />
+              </div>
+            )}
+          </React.Fragment>
+        ))}
       </div>
 
       <FooterCta />

@@ -70,8 +70,9 @@ export default function HeroSection() {
   const [mPhase,      setMPhase]      = useState<MobilePhase>("intro");
   const [mIntroShown, setMIntroShown] = useState(false);
   const [mUIShown,    setMUIShown]    = useState(false);
-  const [cardVisible, setCardVisible] = useState(false);
-  const [slideIdx,    setSlideIdx]    = useState(0);
+  const [cardVisible,  setCardVisible]  = useState(false);
+  const [cardAnimated, setCardAnimated] = useState(false);
+  const [slideIdx,     setSlideIdx]     = useState(0);
   const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null);
   const [quizActive,  setQuizActive]  = useState(false);
 
@@ -230,6 +231,13 @@ export default function HeroSection() {
     const t = setTimeout(() => setCardVisible(true), 180);
     return () => clearTimeout(t);
   }, [mUIShown]);
+
+  // ── Mobile: one rAF after mount so opacity/translate can animate ──
+  useEffect(() => {
+    if (!cardVisible) return;
+    const id = requestAnimationFrame(() => setCardAnimated(true));
+    return () => cancelAnimationFrame(id);
+  }, [cardVisible]);
 
   // ── Mobile: video ended ───────────────────────────────────────────
   const handleVideoEnded = useCallback(() => {
@@ -505,9 +513,9 @@ export default function HeroSection() {
             <div style={{
               position: "absolute", top: "13vh", left: "50%", zIndex: 30,
               width: "82vw", maxWidth: 340,
-              transform: cardVisible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(30px)",
-              opacity: cardVisible ? 1 : 0,
-              transition: "opacity 1s ease, transform 1s cubic-bezier(0.16,1,0.3,1)",
+              transform: cardAnimated ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(52px)",
+              opacity: cardAnimated ? 1 : 0,
+              transition: "opacity 1.8s ease 0.05s, transform 1.8s cubic-bezier(0.16,1,0.3,1) 0.05s",
             }}>
               {/* Card shell */}
               <div
@@ -543,8 +551,7 @@ export default function HeroSection() {
                       position: "relative", overflow: "hidden",
                       background: "#0d0d0f",
                       display: "flex", flexDirection: "column",
-                      justifyContent: "flex-start", alignItems: "center",
-                      paddingTop: "10%",
+                      justifyContent: "flex-end",
                       cursor: "pointer",
                     }}
                     onClick={onCtaTap}
@@ -568,45 +575,40 @@ export default function HeroSection() {
                     <div style={{
                       position: "absolute", inset: 0,
                       background: lastFrameUrl
-                        ? "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.72) 100%)"
+                        ? "linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 60%)"
                         : "linear-gradient(160deg, #131313 0%, #09090B 100%)",
                       pointerEvents: "none",
                     }} />
                     <div aria-hidden="true" style={{
                       position: "absolute", inset: 0, pointerEvents: "none",
-                      opacity: 0.03, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+                      opacity: 0.04, backgroundImage: GRAIN, backgroundSize: "200px 200px",
                     }} />
 
-                    {/* CTA text — centered at top of card, 2 lines */}
-                    <div style={{
-                      position: "relative", zIndex: 2,
-                      display: "flex", flexDirection: "column",
-                      alignItems: "center", textAlign: "center",
-                      padding: "0 28px",
-                    }}>
-                      <div style={{ width: 22, height: 1, background: C.gold, marginBottom: 20, opacity: 0.7 }} />
-                      <h2 style={{
-                        fontFamily: '"Playfair Display", serif',
-                        fontSize: "clamp(20px, 6.2vw, 24px)",
-                        fontWeight: 400, color: C.cream,
-                        lineHeight: 1.3, letterSpacing: "-0.01em",
-                        margin: "0 0 18px",
-                        textShadow: "0 2px 20px rgba(0,0,0,0.8)",
-                      }}>
-                        Descubra o perfume<br />feito para você
-                      </h2>
+                    {/* CTA text — bottom-left, same layout as collection slides */}
+                    <div style={{ position: "relative", zIndex: 1, padding: "0 26px 30px" }}>
                       <p style={{
                         fontFamily: '"Josefin Sans", sans-serif',
                         fontWeight: 100, fontSize: 8,
-                        letterSpacing: "0.52em", textTransform: "uppercase",
-                        color: C.goldDim, paddingRight: "0.52em",
-                        textShadow: "0 1px 10px rgba(0,0,0,0.8)",
-                      }}>Toque para começar</p>
+                        letterSpacing: "0.42em", textTransform: "uppercase",
+                        color: C.goldDim, marginBottom: 8, paddingRight: "0.42em",
+                      }}>Para você</p>
+                      <h2 style={{
+                        fontFamily: '"Playfair Display", serif',
+                        fontSize: "clamp(22px, 6.5vw, 26px)",
+                        fontWeight: 400, color: C.cream,
+                        letterSpacing: "-0.01em", lineHeight: 1.15, margin: "0 0 18px",
+                      }}>Descubra o perfume<br />feito para você</h2>
+                      <p style={{
+                        fontFamily: '"Josefin Sans", sans-serif',
+                        fontWeight: 100, fontSize: 8,
+                        letterSpacing: "0.42em", textTransform: "uppercase",
+                        color: "rgba(238,234,226,0.35)", paddingRight: "0.42em",
+                      }}>Toque para começar →</p>
                     </div>
                     <div style={{
                       position: "absolute", top: 0, left: 0, right: 0, height: 1,
-                      background: "linear-gradient(to right, transparent, rgba(196,163,90,0.35), transparent)",
-                      zIndex: 3,
+                      background: "linear-gradient(to right, transparent, rgba(196,163,90,0.22), transparent)",
+                      zIndex: 2,
                     }} />
                   </div>
 
