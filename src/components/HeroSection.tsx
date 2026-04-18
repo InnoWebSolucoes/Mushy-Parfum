@@ -64,12 +64,12 @@ export default function HeroSection() {
 
   // ── Mobile state ──────────────────────────────────────────────────
   const mVideoRef      = useRef<HTMLVideoElement>(null);
-  const mFrameCanvas   = useRef<HTMLCanvasElement>(null);
   const [mPhase,       setMPhase]      = useState<MobilePhase>("intro");
   const [mIntroShown,  setMIntroShown] = useState(false);
   const [mUIShown,     setMUIShown]    = useState(false);
   const [cardVisible,  setCardVisible] = useState(false);
   const [slideIdx,     setSlideIdx]    = useState(0);
+  const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null);
 
   useEffect(() => { setIsMobile(window.innerWidth < 768); }, []);
 
@@ -203,18 +203,18 @@ export default function HeroSection() {
 
   // ── Mobile: capture last frame + show card ────────────────────────
   const handleVideoEnded = useCallback(() => {
-    // Grab the last rendered frame into the offscreen canvas
-    const video  = mVideoRef.current;
-    const canvas = mFrameCanvas.current;
-    if (video && canvas) {
+    // Capture the last rendered frame to a data URL before the video element clears
+    const video = mVideoRef.current;
+    if (video) {
       try {
-        canvas.width  = video.videoWidth  || 390;
-        canvas.height = video.videoHeight || 844;
-        canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const tmp = document.createElement("canvas");
+        tmp.width  = video.videoWidth  || 390;
+        tmp.height = video.videoHeight || 844;
+        tmp.getContext("2d")?.drawImage(video, 0, 0, tmp.width, tmp.height);
+        setLastFrameUrl(tmp.toDataURL("image/jpeg", 0.92));
       } catch { /* cross-origin guard */ }
     }
     setMPhase("done");
-    // Brief pause so the frame is visible, then animate card in
     setTimeout(() => setCardVisible(true), 320);
   }, []);
 
@@ -436,9 +436,6 @@ export default function HeroSection() {
 
           {/* ═══ POST-VIDEO CARD CAROUSEL ═══════════════════════ */}
 
-          {/* Offscreen canvas to hold the last video frame */}
-          <canvas ref={mFrameCanvas} style={{ display: "none" }} />
-
           {/* Card wrapper — appears when video ends */}
           {mPhase === "done" && (
             <div style={{
@@ -468,18 +465,23 @@ export default function HeroSection() {
                 opacity: cardVisible ? 1 : 0,
                 position: "relative",
               }}>
-                {/* Canvas: last captured video frame — shown first, fades out when carousel advances */}
-                <canvas
-                  ref={mFrameCanvas}
-                  style={{
-                    position: "absolute", inset: 0,
-                    width: "100%", height: "100%",
-                    objectFit: "cover",
-                    opacity: slideIdx === 0 ? 1 : 0,
-                    transition: "opacity 0.8s ease",
-                    zIndex: 1,
-                  }}
-                />
+                {/* Last captured video frame — shown first, fades out when carousel advances */}
+                {lastFrameUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={lastFrameUrl}
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute", inset: 0,
+                      width: "100%", height: "100%",
+                      objectFit: "cover",
+                      opacity: slideIdx === 0 ? 1 : 0,
+                      transition: "opacity 0.8s ease",
+                      zIndex: 1,
+                    }}
+                  />
+                )}
 
                 {/* Carousel strip */}
                 <div style={{
