@@ -21,6 +21,14 @@ const C = {
   dim:     "rgba(238,234,226,0.35)",
 };
 
+// Extra carousel slides after the CTA card (slide 0)
+const CAROUSEL_EXTRA = [
+  { bg: "radial-gradient(ellipse at 60% 40%, #2a1806 0%, #0e0904 100%)" },
+  { bg: "radial-gradient(ellipse at 40% 60%, #280d14 0%, #0e070a 100%)" },
+  { bg: "radial-gradient(ellipse at 55% 35%, #081420 0%, #05090f 100%)" },
+];
+const TOTAL_SLIDES = 1 + CAROUSEL_EXTRA.length; // 4
+
 // Perfumes for the swipe quiz
 const QUIZ_PERFUMES = [
   {
@@ -106,8 +114,11 @@ export default function HeroSection() {
   const [cardFlipped,  setCardFlipped]  = useState(false);
   const [swipeX,       setSwipeX]       = useState(0);
   const [swipeExiting, setSwipeExiting] = useState<"like" | "dislike" | null>(null);
-  const dragRef   = useRef({ startX: 0, moved: false });
-  const swipeXRef = useRef(0);
+
+  // Drag refs — quiz swipe and carousel swipe kept separate
+  const quizDragRef      = useRef({ startX: 0, moved: false });
+  const swipeXRef        = useRef(0);
+  const carouselDragRef  = useRef({ startX: 0, moved: false });
 
   useEffect(() => { setIsMobile(window.innerWidth < 768); }, []);
 
@@ -226,41 +237,42 @@ export default function HeroSection() {
     mVideoRef.current?.play().catch(() => {});
   }, [mPhase]);
 
-  // ── Mobile: show chrome at 65% ───────────────────────────────────
+  // ── Mobile: chrome at 65% + frame capture at 92% ─────────────────
   useEffect(() => {
     if (mPhase !== "video") return;
     const video = mVideoRef.current;
     if (!video) return;
+    let frameCaptured = false;
     const check = () => {
-      if (mUIShown) return;
-      if (video.duration > 0 && video.currentTime / video.duration >= 0.65) setMUIShown(true);
+      if (!video.duration) return;
+      const pct = video.currentTime / video.duration;
+      if (!mUIShown && pct >= 0.65) setMUIShown(true);
+      if (!frameCaptured && pct >= 0.92) {
+        frameCaptured = true;
+        try {
+          const tmp = document.createElement("canvas");
+          tmp.width  = video.videoWidth  || 390;
+          tmp.height = video.videoHeight || 844;
+          tmp.getContext("2d")?.drawImage(video, 0, 0, tmp.width, tmp.height);
+          setLastFrameUrl(tmp.toDataURL("image/jpeg", 0.92));
+        } catch { /* cross-origin guard */ }
+      }
     };
     video.addEventListener("timeupdate", check, { passive: true });
     return () => video.removeEventListener("timeupdate", check);
   }, [mPhase, mUIShown]);
 
-  // ── Mobile: capture last frame + show card ────────────────────────
-  const handleVideoEnded = useCallback(() => {
-    const video = mVideoRef.current;
-    if (video) {
-      try {
-        const tmp = document.createElement("canvas");
-        tmp.width  = video.videoWidth  || 390;
-        tmp.height = video.videoHeight || 844;
-        tmp.getContext("2d")?.drawImage(video, 0, 0, tmp.width, tmp.height);
-        setLastFrameUrl(tmp.toDataURL("image/jpeg", 0.92));
-      } catch { /* cross-origin guard */ }
-    }
-    setMPhase("done");
-    setTimeout(() => setCardVisible(true), 100);
-  }, []);
-
-  // ── Mobile: last frame → CTA card (1 s earlier) ──────────────────
+  // ── Mobile: show card when chrome appears (before video ends) ─────
   useEffect(() => {
-    if (!cardVisible) return;
-    const t = setTimeout(() => setSlideIdx(1), 1800);
+    if (!mUIShown) return;
+    const t = setTimeout(() => setCardVisible(true), 180);
     return () => clearTimeout(t);
-  }, [cardVisible]);
+  }, [mUIShown]);
+
+  // ── Mobile: video ended → just transition phase ───────────────────
+  const handleVideoEnded = useCallback(() => {
+    setMPhase("done");
+  }, []);
 
   // ── Quiz: activate ────────────────────────────────────────────────
   const activateQuiz = useCallback(() => {
@@ -272,28 +284,55 @@ export default function HeroSection() {
     setSwipeExiting(null);
   }, []);
 
-  // ── Quiz: pointer events (swipe + flip) ───────────────────────────
+  // ── Carousel swipe handlers ───────────────────────────────────────
+  const onCarouselDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    carouselDragRef.current = { startX: e.clientX, moved: false };
+  }, []);
+
+  const onCarouselMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (Math.abs(e.clientX - carouselDragRef.current.startX) > 8) {
+      carouselDragRef.current.moved = true;
+    }
+  }, []);
+
+  const onCarouselUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const dx = e.clientX - carouselDragRef.current.startX;
+    if (carouselDragRef.current.moved && Math.abs(dx) > 40) {
+      setSlideIdx(i => dx < 0
+        ? Math.min(i + 1, TOTAL_SLIDES - 1)
+        : Math.max(i - 1, 0)
+      );
+    }
+  }, []);
+
+  // CTA tap — only fire if it wasn't a carousel swipe
+  const onCtaTap = useCallback(() => {
+    if (!carouselDragRef.current.moved) activateQuiz();
+  }, [activateQuiz]);
+
+  // ── Quiz: pointer handlers ────────────────────────────────────────
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, moved: false };
+    quizDragRef.current = { startX: e.clientX, moved: false };
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (swipeExiting) return;
-    const dx = e.clientX - dragRef.current.startX;
-    if (!dragRef.current.moved && Math.abs(dx) > 6) dragRef.current.moved = true;
-    if (dragRef.current.moved && !cardFlipped) {
+    const dx = e.clientX - quizDragRef.current.startX;
+    if (!quizDragRef.current.moved && Math.abs(dx) > 6) quizDragRef.current.moved = true;
+    if (quizDragRef.current.moved && !cardFlipped) {
       swipeXRef.current = dx;
       setSwipeX(dx);
     }
   }, [swipeExiting, cardFlipped]);
 
   const onPointerUp = useCallback(() => {
-    if (!dragRef.current.moved) {
+    if (!quizDragRef.current.moved) {
       setCardFlipped(f => !f);
       return;
     }
-    dragRef.current.moved = false;
+    quizDragRef.current.moved = false;
     const dx = swipeXRef.current;
     if (Math.abs(dx) >= 80) {
       const dir: "like" | "dislike" = dx > 0 ? "like" : "dislike";
@@ -322,7 +361,7 @@ export default function HeroSection() {
   };
 
   // ═══════════════════════════════════════════════════════════════════
-  // MENU — slides up from bottom
+  // MENU
   // ═══════════════════════════════════════════════════════════════════
   const renderMenu = () => (
     <div
@@ -340,7 +379,6 @@ export default function HeroSection() {
         position: "absolute", inset: 0, pointerEvents: "none",
         opacity: 0.025, backgroundImage: GRAIN, backgroundSize: "200px 200px",
       }} />
-
       <div style={{ display: "flex", justifyContent: "flex-end", padding: "36px 36px 0", flexShrink: 0 }}>
         <button
           onClick={() => setMenuOpen(false)}
@@ -351,11 +389,8 @@ export default function HeroSection() {
             fontWeight: 100, fontSize: 9, letterSpacing: "0.5em",
             textTransform: "uppercase", color: C.dim, paddingRight: "0.5em",
           }}
-        >
-          Close
-        </button>
+        >Close</button>
       </div>
-
       <nav style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 40px" }}>
         {["Collections", "About", "Stockists", "Contact"].map((label, i) => (
           <a
@@ -374,12 +409,9 @@ export default function HeroSection() {
               transform: menuOpen ? "translateY(0)" : "translateY(20px)",
               transition: `opacity 0.55s ease ${0.06 + i * 0.09}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${0.06 + i * 0.09}s`,
             }}
-          >
-            {label}
-          </a>
+          >{label}</a>
         ))}
       </nav>
-
       <div style={{
         padding: "0 40px 40px", flexShrink: 0,
         opacity: menuOpen ? 1 : 0, transition: "opacity 0.5s ease 0.44s",
@@ -405,14 +437,13 @@ export default function HeroSection() {
   // MOBILE
   // ═══════════════════════════════════════════════════════════════════
   if (isMobile) {
-    const uiVisible = mUIShown || mPhase === "done";
-
-    // Quiz card derived values
-    const perfume      = QUIZ_PERFUMES[quizIdx] ?? QUIZ_PERFUMES[0];
-    const exitTransform = swipeExiting
+    const uiVisible      = mUIShown || mPhase === "done";
+    const carouselShown  = cardVisible && !quizActive;
+    const perfume        = QUIZ_PERFUMES[quizIdx] ?? QUIZ_PERFUMES[0];
+    const exitTransform  = swipeExiting
       ? `translateX(${swipeExiting === "like" ? "115%" : "-115%"}) rotate(${swipeExiting === "like" ? 22 : -22}deg)`
       : `translateX(${swipeX}px) rotate(${swipeX * 0.055}deg)`;
-    const likeOpacity    = swipeX > 20  ? Math.min((swipeX - 20)          / 60, 1) : 0;
+    const likeOpacity    = swipeX > 20  ? Math.min((swipeX - 20)           / 60, 1) : 0;
     const dislikeOpacity = swipeX < -20 ? Math.min((Math.abs(swipeX) - 20) / 60, 1) : 0;
 
     return (
@@ -478,7 +509,6 @@ export default function HeroSection() {
                 color: C.goldDim, margin: "16px 0 0", paddingRight: "0.72em", lineHeight: 1,
               }}>Parfum</p>
             </div>
-
             <div style={{
               position: "absolute", bottom: "9vh", left: "50%", transform: "translateX(-50%)",
               opacity: mPhase === "intro" && mIntroShown ? 1 : 0,
@@ -492,94 +522,181 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* ═══ CTA CARD (post-video, pre-quiz) ════════════════ */}
-          {mPhase === "done" && !quizActive && (
+          {/* ═══ CAROUSEL (CTA + collection cards) ═══════════════ */}
+          {carouselShown && (
             <div style={{
               position: "absolute", top: "13vh", left: "50%",
               transform: "translateX(-50%)", zIndex: 30,
               width: "82vw", maxWidth: 340,
             }}>
-              <div style={{
-                width: "100%", height: "63vh", maxHeight: 510,
-                borderRadius: 28, overflow: "hidden", position: "relative",
-                boxShadow: [
-                  "0 40px 90px rgba(0,0,0,0.9)",
-                  "0 16px 36px rgba(0,0,0,0.7)",
-                  "inset 0 1px 0 rgba(255,255,255,0.06)",
-                ].join(", "),
-                animation: cardVisible
-                  ? "card-form 0.75s cubic-bezier(0.16,1,0.3,1) forwards, card-float 5s ease-in-out 0.75s infinite"
-                  : "none",
-                opacity: cardVisible ? 1 : 0,
-              }}>
-                {/* Last video frame — fades out */}
-                {lastFrameUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={lastFrameUrl}
-                    alt=""
-                    aria-hidden="true"
+              {/* Card shell — animation plays once when it mounts */}
+              <div
+                onPointerDown={onCarouselDown}
+                onPointerMove={onCarouselMove}
+                onPointerUp={onCarouselUp}
+                style={{
+                  width: "100%", height: "63vh", maxHeight: 510,
+                  borderRadius: 28, overflow: "hidden", position: "relative",
+                  cursor: "grab", touchAction: "none", userSelect: "none",
+                  boxShadow: [
+                    "0 40px 90px rgba(0,0,0,0.9)",
+                    "0 16px 36px rgba(0,0,0,0.7)",
+                    "inset 0 1px 0 rgba(255,255,255,0.06)",
+                  ].join(", "),
+                  animation: "card-form 0.75s cubic-bezier(0.16,1,0.3,1) forwards, card-float 5s ease-in-out 0.75s infinite",
+                }}
+              >
+                {/* Carousel strip */}
+                <div style={{
+                  display: "flex",
+                  width: `${TOTAL_SLIDES * 100}%`,
+                  height: "100%",
+                  transform: `translateX(${(-slideIdx / TOTAL_SLIDES) * 100}%)`,
+                  transition: "transform 0.72s cubic-bezier(0.76,0,0.24,1)",
+                }}>
+
+                  {/* ── Slide 0: CTA + last frame ─────────────── */}
+                  <div
                     style={{
-                      position: "absolute", inset: 0, width: "100%", height: "100%",
-                      objectFit: "cover",
-                      opacity: slideIdx === 0 ? 1 : 0,
-                      transition: "opacity 1s ease",
-                      zIndex: 2,
+                      width: `${100 / TOTAL_SLIDES}%`,
+                      flexShrink: 0, height: "100%",
+                      position: "relative", overflow: "hidden",
+                      background: "#0d0d0f",
+                      display: "flex", flexDirection: "column",
+                      justifyContent: "center", alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                    onClick={onCtaTap}
+                  >
+                    {/* Last frame image — fills the card when captured */}
+                    {lastFrameUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={lastFrameUrl}
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute", inset: 0,
+                          width: "100%", height: "100%",
+                          objectFit: "cover",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+
+                    {/* Gradient overlay for text readability */}
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      background: lastFrameUrl
+                        ? "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.32) 55%, rgba(0,0,0,0.12) 100%)"
+                        : "linear-gradient(160deg, #131313 0%, #09090B 100%)",
+                      transition: "background 1s ease",
+                      pointerEvents: "none",
+                    }} />
+
+                    {/* Grain */}
+                    <div aria-hidden="true" style={{
+                      position: "absolute", inset: 0, pointerEvents: "none",
+                      opacity: 0.035, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+                    }} />
+
+                    {/* CTA text — centered, overlaid on the frame */}
+                    <div style={{
+                      position: "relative", zIndex: 2,
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", textAlign: "center",
+                      padding: "0 32px",
+                    }}>
+                      <div style={{
+                        width: 26, height: 1, background: C.gold,
+                        marginBottom: 26, opacity: 0.7,
+                      }} />
+                      <h2 style={{
+                        fontFamily: '"Playfair Display", serif',
+                        fontSize: "clamp(22px, 6.8vw, 27px)",
+                        fontWeight: 400, color: C.cream,
+                        lineHeight: 1.28, letterSpacing: "-0.01em",
+                        margin: "0 0 22px",
+                        textShadow: "0 2px 20px rgba(0,0,0,0.7)",
+                      }}>
+                        Let us find the right scent for you
+                      </h2>
+                      <p style={{
+                        fontFamily: '"Josefin Sans", sans-serif',
+                        fontWeight: 100, fontSize: 8,
+                        letterSpacing: "0.52em", textTransform: "uppercase",
+                        color: C.goldDim, paddingRight: "0.52em",
+                        textShadow: "0 1px 10px rgba(0,0,0,0.8)",
+                      }}>Tap to begin</p>
+                    </div>
+
+                    {/* Gold top edge */}
+                    <div style={{
+                      position: "absolute", top: 0, left: 0, right: 0, height: 1,
+                      background: "linear-gradient(to right, transparent, rgba(196,163,90,0.35), transparent)",
+                      zIndex: 3,
+                    }} />
+                  </div>
+
+                  {/* ── Slides 1–3: collection placeholders ────── */}
+                  {CAROUSEL_EXTRA.map((slide, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: `${100 / TOTAL_SLIDES}%`,
+                        flexShrink: 0, height: "100%",
+                        background: slide.bg,
+                        position: "relative",
+                        display: "flex", flexDirection: "column", justifyContent: "flex-end",
+                      }}
+                    >
+                      <div aria-hidden="true" style={{
+                        position: "absolute", inset: 0, pointerEvents: "none",
+                        opacity: 0.04, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+                      }} />
+                      <div style={{
+                        position: "absolute", bottom: 0, left: 0, right: 0, height: "50%",
+                        background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)",
+                      }} />
+                      {/* Coming soon placeholder */}
+                      <div style={{ position: "relative", zIndex: 1, padding: "0 24px 32px" }}>
+                        <p style={{
+                          fontFamily: '"Josefin Sans", sans-serif',
+                          fontWeight: 100, fontSize: 8,
+                          letterSpacing: "0.38em", textTransform: "uppercase",
+                          color: "rgba(238,234,226,0.25)", paddingRight: "0.38em",
+                        }}>Coming soon</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dot indicators */}
+              <div style={{
+                display: "flex", justifyContent: "center", alignItems: "center",
+                gap: 8, marginTop: 18,
+              }}>
+                {Array.from({ length: TOTAL_SLIDES }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSlideIdx(i)}
+                    aria-label={`Go to slide ${i + 1}`}
+                    style={{
+                      width: i === slideIdx ? 22 : 6, height: 6, borderRadius: 3,
+                      border: "none", cursor: "pointer", padding: 0,
+                      background: i === slideIdx ? C.gold : "rgba(238,234,226,0.2)",
+                      transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)",
                     }}
                   />
-                )}
-
-                {/* CTA content — fades in */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={activateQuiz}
-                  onKeyDown={e => e.key === "Enter" && activateQuiz()}
-                  style={{
-                    position: "absolute", inset: 0, zIndex: 1,
-                    display: "flex", flexDirection: "column",
-                    alignItems: "center", justifyContent: "center",
-                    background: "linear-gradient(160deg, #131313 0%, #09090B 100%)",
-                    cursor: "pointer", padding: "0 36px", textAlign: "center",
-                    opacity: slideIdx > 0 ? 1 : 0,
-                    transition: "opacity 0.9s ease 0.3s",
-                  }}
-                >
-                  <div style={{
-                    width: 28, height: 1, background: C.gold,
-                    marginBottom: 30, opacity: 0.65,
-                  }} />
-                  <h2 style={{
-                    fontFamily: '"Playfair Display", serif',
-                    fontSize: "clamp(23px, 7vw, 28px)",
-                    fontWeight: 400, color: C.cream,
-                    lineHeight: 1.28, letterSpacing: "-0.01em",
-                    margin: "0 0 26px",
-                  }}>
-                    Let us find the right scent for you
-                  </h2>
-                  <p style={{
-                    fontFamily: '"Josefin Sans", sans-serif',
-                    fontWeight: 100, fontSize: 8,
-                    letterSpacing: "0.52em", textTransform: "uppercase",
-                    color: C.goldDim, paddingRight: "0.52em",
-                  }}>Tap to begin</p>
-                </div>
-
-                {/* Gold top edge */}
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: 1,
-                  background: "linear-gradient(to right, transparent, rgba(196,163,90,0.35), transparent)",
-                  zIndex: 10,
-                }} />
+                ))}
               </div>
             </div>
           )}
 
-          {/* ═══ QUIZ (tinder-style swipe) ════════════════════════ */}
-          {mPhase === "done" && quizActive && quizIdx < QUIZ_PERFUMES.length && (
+          {/* ═══ QUIZ ═════════════════════════════════════════════ */}
+          {quizActive && quizIdx < QUIZ_PERFUMES.length && (
             <>
-              {/* Title */}
               <div style={{
                 position: "absolute", top: "11vh", left: 0, right: 0,
                 zIndex: 30, textAlign: "center",
@@ -593,14 +710,12 @@ export default function HeroSection() {
                 }}>Swipe on your preferences</p>
               </div>
 
-              {/* Swipe card wrapper */}
               <div style={{
                 position: "absolute", top: "19vh", left: "50%",
                 transform: "translateX(-50%)", zIndex: 30,
                 width: "82vw", maxWidth: 340,
                 animation: "rise-in 0.5s cubic-bezier(0.16,1,0.3,1) both",
               }}>
-                {/* Draggable outer shell (handles swipe transform) */}
                 <div
                   onPointerDown={onPointerDown}
                   onPointerMove={onPointerMove}
@@ -619,21 +734,17 @@ export default function HeroSection() {
                     perspective: "1000px",
                   }}
                 >
-                  {/* 3-D flip inner */}
                   <div style={{
-                    width: "100%", height: "100%",
-                    borderRadius: 28,
+                    width: "100%", height: "100%", borderRadius: 28,
                     transformStyle: "preserve-3d",
                     transform: cardFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
                     transition: "transform 0.68s cubic-bezier(0.16,1,0.3,1)",
                     position: "relative",
                   }}>
-
-                    {/* ── FRONT ─────────────────────────────────── */}
+                    {/* FRONT */}
                     <div style={{
                       position: "absolute", inset: 0, borderRadius: 28, overflow: "hidden",
-                      backfaceVisibility: "hidden",
-                      WebkitBackfaceVisibility: "hidden",
+                      backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
                       background: perfume.bg,
                       display: "flex", flexDirection: "column", justifyContent: "flex-end",
                     }}>
@@ -645,8 +756,6 @@ export default function HeroSection() {
                         position: "absolute", bottom: 0, left: 0, right: 0, height: "60%",
                         background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)",
                       }} />
-
-                      {/* Perfume info */}
                       <div style={{ position: "relative", zIndex: 1, padding: "0 24px 28px" }}>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
@@ -672,8 +781,7 @@ export default function HeroSection() {
                           color: "rgba(238,234,226,0.18)", marginTop: 16, paddingRight: "0.28em",
                         }}>Tap to learn more · swipe to decide</p>
                       </div>
-
-                      {/* Like indicator */}
+                      {/* Like */}
                       <div style={{
                         position: "absolute", inset: 0, zIndex: 5,
                         display: "flex", alignItems: "center", justifyContent: "center",
@@ -692,8 +800,7 @@ export default function HeroSection() {
                           </svg>
                         </div>
                       </div>
-
-                      {/* Dislike indicator */}
+                      {/* Dislike */}
                       <div style={{
                         position: "absolute", inset: 0, zIndex: 5,
                         display: "flex", alignItems: "center", justifyContent: "center",
@@ -712,8 +819,6 @@ export default function HeroSection() {
                           </svg>
                         </div>
                       </div>
-
-                      {/* Gold top edge */}
                       <div style={{
                         position: "absolute", top: 0, left: 0, right: 0, height: 1,
                         background: "linear-gradient(to right, transparent, rgba(196,163,90,0.35), transparent)",
@@ -721,18 +826,16 @@ export default function HeroSection() {
                       }} />
                     </div>
 
-                    {/* ── BACK ──────────────────────────────────── */}
+                    {/* BACK */}
                     <div style={{
                       position: "absolute", inset: 0, borderRadius: 28, overflow: "hidden",
-                      backfaceVisibility: "hidden",
-                      WebkitBackfaceVisibility: "hidden",
+                      backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
                       background: "#0d0d0f",
                       padding: "26px 22px 22px",
                       display: "flex", flexDirection: "column", gap: 18,
                       overflowY: "auto",
                     }}>
-                      {/* Header */}
                       <div>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
@@ -747,8 +850,6 @@ export default function HeroSection() {
                           letterSpacing: "-0.01em", lineHeight: 1, margin: 0,
                         }}>{perfume.name}</h2>
                       </div>
-
-                      {/* Scent composition bars */}
                       <div>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
@@ -769,10 +870,7 @@ export default function HeroSection() {
                                 fontWeight: 100, fontSize: 8, color: C.goldDim,
                               }}>{s.pct}%</span>
                             </div>
-                            <div style={{
-                              height: 2, background: "rgba(255,255,255,0.07)",
-                              borderRadius: 1, overflow: "hidden",
-                            }}>
+                            <div style={{ height: 2, background: "rgba(255,255,255,0.07)", borderRadius: 1, overflow: "hidden" }}>
                               <div style={{
                                 height: "100%", width: `${s.pct}%`,
                                 background: `linear-gradient(to right, ${C.goldDim}, ${C.gold})`,
@@ -782,8 +880,6 @@ export default function HeroSection() {
                           </div>
                         ))}
                       </div>
-
-                      {/* Undertones */}
                       <div>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
@@ -805,8 +901,6 @@ export default function HeroSection() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Description + price */}
                       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
@@ -824,8 +918,6 @@ export default function HeroSection() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Flip hint */}
                       <p style={{
                         fontFamily: '"Josefin Sans", sans-serif',
                         fontWeight: 100, fontSize: 7.5,
@@ -837,20 +929,14 @@ export default function HeroSection() {
                   </div>
                 </div>
 
-                {/* Swipe direction labels */}
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  padding: "14px 6px 0", opacity: 0.4,
-                }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 6px 0", opacity: 0.4 }}>
                   <span style={{
-                    fontFamily: '"Josefin Sans", sans-serif',
-                    fontWeight: 100, fontSize: 8,
+                    fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 8,
                     letterSpacing: "0.28em", textTransform: "uppercase",
                     color: "#EF4444", paddingRight: "0.28em",
                   }}>← Pass</span>
                   <span style={{
-                    fontFamily: '"Josefin Sans", sans-serif',
-                    fontWeight: 100, fontSize: 8,
+                    fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 8,
                     letterSpacing: "0.28em", textTransform: "uppercase",
                     color: "#22C55E", paddingRight: "0.28em",
                   }}>Love →</span>
@@ -860,7 +946,7 @@ export default function HeroSection() {
           )}
 
           {/* ═══ QUIZ COMPLETE ════════════════════════════════════ */}
-          {mPhase === "done" && quizActive && quizIdx >= QUIZ_PERFUMES.length && (
+          {quizActive && quizIdx >= QUIZ_PERFUMES.length && (
             <div style={{
               position: "absolute", inset: 0, zIndex: 30,
               display: "flex", flexDirection: "column",
