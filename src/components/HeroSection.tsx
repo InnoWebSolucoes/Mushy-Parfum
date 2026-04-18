@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import Image from "next/image";
+import QuizOverlay from "./QuizOverlay";
 
 // ── Desktop config ─────────────────────────────────────────────────
 const TOTAL_FRAMES  = 150;
@@ -23,109 +24,25 @@ const C = {
 // Extra carousel slides (after CTA slide 0)
 const CAROUSEL_EXTRA = [
   {
-    bg:     "radial-gradient(ellipse at 50% 60%, #1a1206 0%, #09090B 100%)",
+    bg:      "radial-gradient(ellipse at 50% 60%, #1a1206 0%, #09090B 100%)",
     eyebrow: "Descubra",
     title:   "nossa coleção completa",
     cta:     "Ver tudo",
   },
   {
-    bg:     "radial-gradient(ellipse at 40% 40%, #0f0820 0%, #09090B 100%)",
+    bg:      "radial-gradient(ellipse at 40% 40%, #0f0820 0%, #09090B 100%)",
     eyebrow: "Criado para",
     title:   "uma saída à noite",
     cta:     "Explorar",
   },
   {
-    bg:     "radial-gradient(ellipse at 60% 40%, #0a140a 0%, #09090B 100%)",
+    bg:      "radial-gradient(ellipse at 60% 40%, #0a140a 0%, #09090B 100%)",
     eyebrow: "Perfeito para",
     title:   "o dia a dia",
     cta:     "Explorar",
   },
 ];
-const TOTAL_SLIDES = 1 + CAROUSEL_EXTRA.length; // 4
-
-// Quiz perfumes — 5 total, all text in Portuguese
-const QUIZ_PERFUMES = [
-  {
-    num: "001",
-    name: "Oud Noir",
-    tagline: "Madeira ancestral. Noite eterna.",
-    intended: "Para noites especiais. Presença marcante.",
-    price: 4,
-    undertones: ["Defumado", "Escuro", "Resinoso", "Terroso"],
-    scents: [
-      { name: "Oud",      pct: 85 },
-      { name: "Âmbar",    pct: 65 },
-      { name: "Fumaça",   pct: 55 },
-      { name: "Almíscar", pct: 30 },
-    ],
-    bg: "radial-gradient(ellipse at 60% 40%, #2a1806 0%, #0e0904 100%)",
-    img: "/prod-1.jpg",
-  },
-  {
-    num: "002",
-    name: "Amber Rose",
-    tagline: "Calor envolto em pétalas.",
-    intended: "Do dia à noite. Para ocasiões íntimas.",
-    price: 3,
-    undertones: ["Floral", "Quente", "Doce", "Aveludado"],
-    scents: [
-      { name: "Rosa",      pct: 75 },
-      { name: "Âmbar",     pct: 70 },
-      { name: "Baunilha",  pct: 40 },
-      { name: "Almíscar",  pct: 35 },
-    ],
-    bg: "radial-gradient(ellipse at 40% 60%, #280d14 0%, #0e070a 100%)",
-    img: "/prod-2.jpg",
-  },
-  {
-    num: "003",
-    name: "Santal",
-    tagline: "Profundidade limpa. Presença natural.",
-    intended: "Uso diário. Ambientes profissionais.",
-    price: 3,
-    undertones: ["Cremoso", "Limpo", "Amadeirado", "Fresco"],
-    scents: [
-      { name: "Sândalo",  pct: 80 },
-      { name: "Cedro",    pct: 50 },
-      { name: "Almíscar", pct: 45 },
-      { name: "Leite",    pct: 35 },
-    ],
-    bg: "radial-gradient(ellipse at 55% 35%, #081420 0%, #05090f 100%)",
-    img: "/prod-3.jpg",
-  },
-  {
-    num: "004",
-    name: "White Musk",
-    tagline: "Leveza que perdura.",
-    intended: "Casual e refinado. Para qualquer momento.",
-    price: 2,
-    undertones: ["Limpo", "Fresco", "Suave", "Aveludado"],
-    scents: [
-      { name: "Almíscar",  pct: 80 },
-      { name: "Cedro",     pct: 45 },
-      { name: "Baunilha",  pct: 35 },
-      { name: "Rosa",      pct: 25 },
-    ],
-    bg: "radial-gradient(ellipse at 50% 50%, #1c1c1c 0%, #090909 100%)",
-    img: "/prod-4.jpg",
-  },
-  {
-    num: "005",
-    name: "Jasmin Noir",
-    tagline: "Floral com alma profunda.",
-    intended: "Para saídas à noite. Sedutor e marcante.",
-    price: 4,
-    undertones: ["Floral", "Escuro", "Resinoso", "Quente"],
-    scents: [
-      { name: "Jasmim",   pct: 78 },
-      { name: "Oud",      pct: 55 },
-      { name: "Almíscar", pct: 40 },
-      { name: "Patchouli",pct: 30 },
-    ],
-    bg: "radial-gradient(ellipse at 35% 65%, #1a0d22 0%, #0a070f 100%)",
-    img: "/prod-5.jpg",
-  },
-];
+const TOTAL_SLIDES = 1 + CAROUSEL_EXTRA.length;
 
 type MobilePhase = "intro" | "video" | "done";
 
@@ -149,26 +66,26 @@ export default function HeroSection() {
   const [ready,   setReady]   = useState(false);
 
   // ── Mobile state ──────────────────────────────────────────────────
-  const mVideoRef      = useRef<HTMLVideoElement>(null);
-  const [mPhase,       setMPhase]      = useState<MobilePhase>("intro");
-  const [mIntroShown,  setMIntroShown] = useState(false);
-  const [mUIShown,     setMUIShown]    = useState(false);
-  const [cardVisible,  setCardVisible] = useState(false);
-  const [slideIdx,     setSlideIdx]    = useState(0);
+  const mVideoRef     = useRef<HTMLVideoElement>(null);
+  const [mPhase,      setMPhase]      = useState<MobilePhase>("intro");
+  const [mIntroShown, setMIntroShown] = useState(false);
+  const [mUIShown,    setMUIShown]    = useState(false);
+  const [cardVisible, setCardVisible] = useState(false);
+  const [slideIdx,    setSlideIdx]    = useState(0);
   const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null);
+  const [quizActive,  setQuizActive]  = useState(false);
 
-  // ── Quiz state ────────────────────────────────────────────────────
-  const [quizActive,   setQuizActive]   = useState(false);
-  const [quizIdx,      setQuizIdx]      = useState(0);
-  const [cardFlipped,  setCardFlipped]  = useState(false);
-  const [swipeX,       setSwipeX]       = useState(0);
-  const [swipeExiting, setSwipeExiting] = useState<"like" | "dislike" | null>(null);
-
-  const quizDragRef     = useRef({ startX: 0, moved: false });
-  const swipeXRef       = useRef(0);
   const carouselDragRef = useRef({ startX: 0, startY: 0, moved: false });
 
   useEffect(() => { setIsMobile(window.innerWidth < 768); }, []);
+
+  // ── Mobile: scroll lock until carousel visible; lock during quiz ─────
+  useEffect(() => {
+    if (isMobile !== true) return;
+    const locked = !cardVisible || quizActive;
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobile, cardVisible, quizActive]);
 
   // ── Desktop: cover-fit draw ───────────────────────────────────────
   const drawFrame = useCallback((img: HTMLImageElement) => {
@@ -263,7 +180,7 @@ export default function HeroSection() {
   // ── Mobile: intro text ────────────────────────────────────────────
   useEffect(() => {
     if (isMobile !== true) return;
-    const t = setTimeout(() => setMIntroShown(true), 150);
+    const t = setTimeout(() => setMIntroShown(true), 200);
     return () => clearTimeout(t);
   }, [isMobile]);
 
@@ -285,7 +202,7 @@ export default function HeroSection() {
     mVideoRef.current?.play().catch(() => {});
   }, [mPhase]);
 
-  // ── Mobile: chrome at 65% — capture frame immediately so card isn't blank
+  // ── Mobile: capture frame at 65% ─────────────────────────────────
   useEffect(() => {
     if (mPhase !== "video") return;
     const video = mVideoRef.current;
@@ -307,26 +224,16 @@ export default function HeroSection() {
     return () => video.removeEventListener("timeupdate", check);
   }, [mPhase, mUIShown]);
 
-  // ── Mobile: show card when chrome appears ────────────────────────
+  // ── Mobile: delay card reveal slightly after chrome ──────────────
   useEffect(() => {
     if (!mUIShown) return;
     const t = setTimeout(() => setCardVisible(true), 180);
     return () => clearTimeout(t);
   }, [mUIShown]);
 
-  // ── Mobile: video ended → phase transition (keep 65% frame, no re-capture)
+  // ── Mobile: video ended ───────────────────────────────────────────
   const handleVideoEnded = useCallback(() => {
     setMPhase("done");
-  }, []);
-
-  // ── Quiz: activate ────────────────────────────────────────────────
-  const activateQuiz = useCallback(() => {
-    setQuizActive(true);
-    setQuizIdx(0);
-    setCardFlipped(false);
-    setSwipeX(0);
-    swipeXRef.current = 0;
-    setSwipeExiting(null);
   }, []);
 
   // ── Carousel drag handlers ────────────────────────────────────────
@@ -346,7 +253,6 @@ export default function HeroSection() {
     const dy = e.clientY - carouselDragRef.current.startY;
     if (!carouselDragRef.current.moved) return;
     if (Math.abs(dy) > Math.abs(dx) && dy > 60) {
-      // downward swipe → scroll to gallery
       window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
     } else if (Math.abs(dx) > 40) {
       setSlideIdx(i => dx < 0 ? Math.min(i + 1, TOTAL_SLIDES - 1) : Math.max(i - 1, 0));
@@ -354,53 +260,19 @@ export default function HeroSection() {
   }, []);
 
   const onCtaTap = useCallback(() => {
-    if (!carouselDragRef.current.moved) activateQuiz();
-  }, [activateQuiz]);
-
-  // ── Quiz pointer handlers ─────────────────────────────────────────
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    quizDragRef.current = { startX: e.clientX, moved: false };
-  }, []);
-
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (swipeExiting) return;
-    const dx = e.clientX - quizDragRef.current.startX;
-    if (!quizDragRef.current.moved && Math.abs(dx) > 6) quizDragRef.current.moved = true;
-    if (quizDragRef.current.moved && !cardFlipped) {
-      swipeXRef.current = dx;
-      setSwipeX(dx);
-    }
-  }, [swipeExiting, cardFlipped]);
-
-  const onPointerUp = useCallback(() => {
-    if (!quizDragRef.current.moved) {
-      setCardFlipped(f => !f);
-      return;
-    }
-    quizDragRef.current.moved = false;
-    const dx = swipeXRef.current;
-    if (Math.abs(dx) >= 80) {
-      const dir: "like" | "dislike" = dx > 0 ? "like" : "dislike";
-      setSwipeExiting(dir);
-      setTimeout(() => {
-        setSwipeExiting(null);
-        setSwipeX(0);
-        swipeXRef.current = 0;
-        setCardFlipped(false);
-        setQuizIdx(i => i + 1);
-      }, 620);
-    } else {
-      setSwipeX(0);
-      swipeXRef.current = 0;
-    }
+    if (!carouselDragRef.current.moved) setQuizActive(true);
   }, []);
 
   // ── Menu scroll lock ──────────────────────────────────────────────
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
+    if (menuOpen) document.body.style.overflow = "hidden";
+    else if (isMobile === true && (!cardVisible || quizActive)) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
+  }, [menuOpen, isMobile, cardVisible, quizActive]);
 
   const scrollToContent = () => {
     if (heroRef.current) window.scrollTo({ top: heroRef.current.offsetHeight, behavior: "smooth" });
@@ -484,17 +356,6 @@ export default function HeroSection() {
   if (isMobile) {
     const uiVisible     = mUIShown || mPhase === "done";
     const carouselShown = cardVisible && !quizActive;
-    const perfume       = QUIZ_PERFUMES[quizIdx] ?? QUIZ_PERFUMES[0];
-    const nextPerfume   = QUIZ_PERFUMES[quizIdx + 1];
-    const exitTransform = swipeExiting
-      ? `translateX(${swipeExiting === "like" ? "115%" : "-115%"}) rotate(${swipeExiting === "like" ? 22 : -22}deg)`
-      : `translateX(${swipeX}px) rotate(${swipeX * 0.055}deg)`;
-    const likeOpacity    = swipeX > 20  ? Math.min((swipeX - 20)           / 60, 1) : 0;
-    const dislikeOpacity = swipeX < -20 ? Math.min((Math.abs(swipeX) - 20) / 60, 1) : 0;
-
-    // Card dimensions (shared between deck peek + main card)
-    const CARD_H   = "61vh";
-    const CARD_MAX = 490;
 
     return (
       <>
@@ -532,47 +393,114 @@ export default function HeroSection() {
             ].join(","),
           }} />
 
-          {/* ═══ INTRO ════════════════════════════════════════════ */}
+          {/* ═══ REDESIGNED INTRO ══════════════════════════════════ */}
           <div style={{
             position: "absolute", inset: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
-            textAlign: "center", pointerEvents: "none", paddingBottom: "6vh",
+            textAlign: "center", pointerEvents: "none",
+            // Exit: whole container fades + rises when video starts
+            opacity: mPhase === "intro" ? 1 : 0,
+            transform: mPhase === "intro" ? "translateY(0)" : "translateY(-16px) scale(0.97)",
+            transition: mPhase !== "intro"
+              ? "opacity 0.9s ease, transform 1s cubic-bezier(0.16,1,0.3,1)"
+              : "none",
           }}>
+            {/* Ambient glow orb */}
+            <div aria-hidden="true" style={{
+              position: "absolute", top: "50%", left: "50%",
+              transform: "translate(-50%, -60%)",
+              width: "100vw", height: "70vw",
+              borderRadius: "50%",
+              background: "radial-gradient(ellipse, rgba(196,163,90,0.07) 0%, transparent 70%)",
+              opacity: mIntroShown ? 1 : 0,
+              transition: "opacity 3s ease 1s",
+            }} />
+
+            {/* Decorative entry line (top) */}
             <div style={{
-              opacity: mPhase === "intro" && mIntroShown ? 1 : 0,
-              transform: mPhase === "intro" && mIntroShown ? "translateY(0)" : "translateY(16px)",
-              transition: mPhase !== "intro"
-                ? "opacity 0.55s ease, transform 0.55s ease"
-                : "opacity 1.5s ease 0.15s, transform 1.2s cubic-bezier(0.16,1,0.3,1) 0.15s",
-            }}>
-              <h1 style={{
-                fontFamily: '"Playfair Display", serif',
-                fontSize: "clamp(72px, 22vw, 96px)",
-                fontWeight: 700, color: C.cream,
-                letterSpacing: "-0.025em", lineHeight: 0.88, margin: 0,
-              }}>Mushy</h1>
-              <p style={{
-                fontFamily: '"Josefin Sans", sans-serif',
-                fontWeight: 100, fontSize: "clamp(11px, 3.2vw, 15px)",
-                letterSpacing: "0.72em", textTransform: "uppercase",
-                color: C.goldDim, margin: "16px 0 0", paddingRight: "0.72em", lineHeight: 1,
-              }}>Parfum</p>
+              width: 1, height: 44,
+              background: `linear-gradient(to bottom, transparent, ${C.goldDim})`,
+              marginBottom: 24,
+              opacity: mIntroShown ? 1 : 0,
+              transform: mIntroShown ? "scaleY(1)" : "scaleY(0)",
+              transformOrigin: "top",
+              transition: mIntroShown
+                ? "opacity 1s ease 0.25s, transform 1.1s cubic-bezier(0.16,1,0.3,1) 0.25s"
+                : "none",
+            }} />
+
+            {/* MUSHY — letter-by-letter reveal */}
+            <div style={{ overflow: "hidden", display: "flex", lineHeight: 0.88 }}>
+              {"MUSHY".split("").map((letter, i) => (
+                <span
+                  key={i}
+                  style={{
+                    display: "inline-block",
+                    fontFamily: '"Playfair Display", serif',
+                    fontSize: "clamp(74px, 22.5vw, 100px)",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: C.cream,
+                    opacity: mIntroShown ? 1 : 0,
+                    transform: mIntroShown ? "translateY(0)" : "translateY(110%)",
+                    transition: mIntroShown
+                      ? `opacity 0.7s ease ${0.18 + i * 0.09}s, transform 1s cubic-bezier(0.16,1,0.3,1) ${0.18 + i * 0.09}s`
+                      : "none",
+                  }}
+                >{letter}</span>
+              ))}
             </div>
+
+            {/* Gold accent line */}
             <div style={{
-              position: "absolute", bottom: "9vh", left: "50%", transform: "translateX(-50%)",
-              opacity: mPhase === "intro" && mIntroShown ? 1 : 0,
-              transition: "opacity 1.4s ease 0.9s",
+              width: mIntroShown ? 40 : 0, height: 1,
+              background: C.gold, opacity: 0.55,
+              margin: "20px auto",
+              transition: mIntroShown ? "width 1.2s cubic-bezier(0.16,1,0.3,1) 0.9s" : "none",
+            }} />
+
+            {/* PARFUM eyebrow */}
+            <p style={{
+              fontFamily: '"Josefin Sans", sans-serif',
+              fontWeight: 100, fontSize: "clamp(10px, 3vw, 13px)",
+              letterSpacing: "0.8em", textTransform: "uppercase",
+              color: C.goldDim, margin: "0 0 10px", paddingRight: "0.8em", lineHeight: 1,
+              opacity: mIntroShown ? 1 : 0,
+              transition: mIntroShown ? "opacity 1.1s ease 0.9s" : "none",
+            }}>Parfum</p>
+
+            {/* Tagline */}
+            <p style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontStyle: "italic", fontWeight: 300,
+              fontSize: "clamp(13px, 3.8vw, 16px)",
+              letterSpacing: "0.06em",
+              color: "rgba(238,234,226,0.3)", margin: 0,
+              opacity: mIntroShown ? 1 : 0,
+              transition: mIntroShown ? "opacity 1s ease 1.15s" : "none",
+            }}>A arte do aroma</p>
+
+            {/* Scroll indicator */}
+            <div style={{
+              position: "absolute", bottom: "8vh", left: "50%", transform: "translateX(-50%)",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+              opacity: mIntroShown ? 0.55 : 0,
+              transition: mIntroShown ? "opacity 1.2s ease 1.5s" : "none",
             }}>
+              <span style={{
+                fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 7.5,
+                letterSpacing: "0.42em", textTransform: "uppercase", color: C.cream, paddingRight: "0.42em",
+              }}>Toque para começar</span>
               <div style={{
-                width: 1, height: 44, margin: "0 auto",
+                width: 1, height: 40,
                 background: `linear-gradient(to bottom, ${C.goldDim}, transparent)`,
-                animation: "pulse-line 2.6s ease-in-out infinite",
+                animation: "pulse-line 2.8s ease-in-out infinite",
               }} />
             </div>
           </div>
 
-          {/* ═══ CAROUSEL (CTA + 3 collection cards) ═════════════ */}
+          {/* ═══ CAROUSEL ═════════════════════════════════════════ */}
           {carouselShown && (
             <div style={{
               position: "absolute", top: "13vh", left: "50%", zIndex: 30,
@@ -607,7 +535,7 @@ export default function HeroSection() {
                   transition: "transform 0.72s cubic-bezier(0.76,0,0.24,1)",
                 }}>
 
-                  {/* Slide 0: CTA + last frame */}
+                  {/* Slide 0: CTA */}
                   <div
                     style={{
                       width: `${100 / TOTAL_SLIDES}%`,
@@ -615,11 +543,13 @@ export default function HeroSection() {
                       position: "relative", overflow: "hidden",
                       background: "#0d0d0f",
                       display: "flex", flexDirection: "column",
-                      justifyContent: "center", alignItems: "center",
+                      justifyContent: "flex-start", alignItems: "center",
+                      paddingTop: "10%",
                       cursor: "pointer",
                     }}
                     onClick={onCtaTap}
                   >
+                    {/* Last video frame as full background */}
                     {lastFrameUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -634,10 +564,11 @@ export default function HeroSection() {
                         }}
                       />
                     )}
+                    {/* Overlay */}
                     <div style={{
                       position: "absolute", inset: 0,
                       background: lastFrameUrl
-                        ? "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.08) 100%)"
+                        ? "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.72) 100%)"
                         : "linear-gradient(160deg, #131313 0%, #09090B 100%)",
                       pointerEvents: "none",
                     }} />
@@ -645,22 +576,24 @@ export default function HeroSection() {
                       position: "absolute", inset: 0, pointerEvents: "none",
                       opacity: 0.03, backgroundImage: GRAIN, backgroundSize: "200px 200px",
                     }} />
+
+                    {/* CTA text — centered at top of card, 2 lines */}
                     <div style={{
                       position: "relative", zIndex: 2,
                       display: "flex", flexDirection: "column",
                       alignItems: "center", textAlign: "center",
-                      padding: "0 32px",
+                      padding: "0 28px",
                     }}>
-                      <div style={{ width: 26, height: 1, background: C.gold, marginBottom: 26, opacity: 0.7 }} />
+                      <div style={{ width: 22, height: 1, background: C.gold, marginBottom: 20, opacity: 0.7 }} />
                       <h2 style={{
                         fontFamily: '"Playfair Display", serif',
-                        fontSize: "clamp(22px, 6.8vw, 27px)",
+                        fontSize: "clamp(20px, 6.2vw, 24px)",
                         fontWeight: 400, color: C.cream,
-                        lineHeight: 1.28, letterSpacing: "-0.01em",
-                        margin: "0 0 22px",
-                        textShadow: "0 2px 20px rgba(0,0,0,0.7)",
+                        lineHeight: 1.3, letterSpacing: "-0.01em",
+                        margin: "0 0 18px",
+                        textShadow: "0 2px 20px rgba(0,0,0,0.8)",
                       }}>
-                        Vamos encontrar o aroma ideal para você
+                        Descubra o perfume<br />feito para você
                       </h2>
                       <p style={{
                         fontFamily: '"Josefin Sans", sans-serif',
@@ -752,9 +685,8 @@ export default function HeroSection() {
                 onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
                 aria-label="Ver coleção"
                 style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                  marginTop: 22, background: "none", border: "none", cursor: "pointer",
-                  padding: 0,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
+                  marginTop: 22, background: "none", border: "none", cursor: "pointer", padding: 0,
                 }}
               >
                 <span style={{
@@ -766,348 +698,6 @@ export default function HeroSection() {
                   <path d="M7 1v12M2 8l5 5 5-5" stroke="#EEEAE2" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
-            </div>
-          )}
-
-          {/* ═══ QUIZ ═════════════════════════════════════════════ */}
-          {quizActive && quizIdx < QUIZ_PERFUMES.length && (
-            <>
-              {/* Title */}
-              <div style={{
-                position: "absolute", top: "11vh", left: 0, right: 0,
-                zIndex: 30, textAlign: "center",
-                animation: "rise-in 0.55s cubic-bezier(0.16,1,0.3,1) both",
-              }}>
-                <p style={{
-                  fontFamily: '"Josefin Sans", sans-serif',
-                  fontWeight: 100, fontSize: 8.5,
-                  letterSpacing: "0.42em", textTransform: "uppercase",
-                  color: C.dim, paddingRight: "0.42em",
-                }}>Deslize conforme suas preferências</p>
-              </div>
-
-              {/* Centering wrapper */}
-              <div style={{
-                position: "absolute", top: "18vh", left: "50%",
-                transform: "translateX(-50%)", zIndex: 30,
-                width: "82vw", maxWidth: 340,
-              }}>
-                {/* Stack + animation wrapper (position:relative so peek card aligns) */}
-                <div style={{
-                  animation: "rise-in 0.5s cubic-bezier(0.16,1,0.3,1) both",
-                  position: "relative",
-                  height: CARD_H, maxHeight: CARD_MAX,
-                }}>
-                  {/* ── Peek card (next in deck) ──────────────── */}
-                  {nextPerfume && (
-                    <div style={{
-                      position: "absolute", inset: 0,
-                      borderRadius: 28, overflow: "hidden",
-                      background: nextPerfume.bg,
-                      transform: swipeExiting
-                        ? "scale(1) translateY(0)"
-                        : "scale(0.92) translateY(12px)",
-                      transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
-                    }}>
-                      <div aria-hidden="true" style={{
-                        position: "absolute", inset: 0, pointerEvents: "none",
-                        opacity: 0.04, backgroundImage: GRAIN, backgroundSize: "200px 200px",
-                      }} />
-                    </div>
-                  )}
-
-                  {/* ── Current card (swipeable + flippable) ───── */}
-                  <div
-                    key={quizIdx}
-                    onPointerDown={onPointerDown}
-                    onPointerMove={onPointerMove}
-                    onPointerUp={onPointerUp}
-                    onPointerCancel={onPointerUp}
-                    style={{
-                      position: "absolute", inset: 0,
-                      zIndex: 1,
-                      borderRadius: 28, cursor: "grab",
-                      touchAction: "none", userSelect: "none",
-                      transform: exitTransform,
-                      transition: swipeExiting
-                        ? "transform 0.62s cubic-bezier(0.76,0,0.24,1)"
-                        : swipeX === 0 ? "transform 0.4s cubic-bezier(0.16,1,0.3,1)" : "none",
-                      boxShadow: "0 32px 80px rgba(0,0,0,0.88), 0 12px 30px rgba(0,0,0,0.65)",
-                      perspective: "1000px",
-                    }}
-                  >
-                    {/* 3-D flip inner */}
-                    <div style={{
-                      width: "100%", height: "100%", borderRadius: 28,
-                      transformStyle: "preserve-3d",
-                      transform: cardFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                      transition: "transform 0.68s cubic-bezier(0.16,1,0.3,1)",
-                      position: "relative",
-                    }}>
-                      {/* FRONT */}
-                      <div style={{
-                        position: "absolute", inset: 0, borderRadius: 28, overflow: "hidden",
-                        backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-                        background: perfume.bg,
-                        display: "flex", flexDirection: "column", justifyContent: "flex-end",
-                      }}>
-                        {/* Product image — contained so bottle shows fully */}
-                        {perfume.img && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={perfume.img}
-                            alt=""
-                            aria-hidden="true"
-                            style={{
-                              position: "absolute",
-                              top: "8%", left: "50%",
-                              transform: "translateX(-50%)",
-                              width: "62%", height: "54%",
-                              objectFit: "contain",
-                              pointerEvents: "none",
-                              opacity: 0.82,
-                              filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.7))",
-                            }}
-                          />
-                        )}
-                        <div aria-hidden="true" style={{
-                          position: "absolute", inset: 0, pointerEvents: "none",
-                          opacity: 0.04, backgroundImage: GRAIN, backgroundSize: "200px 200px",
-                        }} />
-                        <div style={{
-                          position: "absolute", bottom: 0, left: 0, right: 0, height: "55%",
-                          background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
-                        }} />
-                        <div style={{ position: "relative", zIndex: 1, padding: "0 24px 26px" }}>
-                          <p style={{
-                            fontFamily: '"Josefin Sans", sans-serif',
-                            fontWeight: 100, fontSize: 8,
-                            letterSpacing: "0.45em", textTransform: "uppercase",
-                            color: C.goldDim, marginBottom: 7, paddingRight: "0.45em",
-                          }}>{perfume.num}</p>
-                          <h2 style={{
-                            fontFamily: '"Playfair Display", serif',
-                            fontSize: "clamp(26px, 8vw, 30px)",
-                            fontWeight: 400, color: C.cream,
-                            letterSpacing: "-0.01em", lineHeight: 1, margin: "0 0 7px",
-                          }}>{perfume.name}</h2>
-                          <p style={{
-                            fontFamily: '"Josefin Sans", sans-serif',
-                            fontWeight: 100, fontSize: 9.5,
-                            letterSpacing: "0.1em", color: C.dim,
-                          }}>{perfume.tagline}</p>
-                          <p style={{
-                            fontFamily: '"Josefin Sans", sans-serif',
-                            fontWeight: 100, fontSize: 7.5,
-                            letterSpacing: "0.28em", textTransform: "uppercase",
-                            color: "rgba(238,234,226,0.18)", marginTop: 14, paddingRight: "0.28em",
-                          }}>Toque para saber mais · deslize para decidir</p>
-                        </div>
-                        {/* Like */}
-                        <div style={{
-                          position: "absolute", inset: 0, zIndex: 5,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          pointerEvents: "none",
-                          opacity: likeOpacity,
-                          transition: swipeX === 0 ? "opacity 0.3s ease" : "none",
-                        }}>
-                          <div style={{
-                            width: 76, height: 76, borderRadius: "50%",
-                            background: "rgba(34,197,94,0.12)",
-                            border: "2px solid #22C55E",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                              <path d="M5 13l4 4L19 7" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Dislike */}
-                        <div style={{
-                          position: "absolute", inset: 0, zIndex: 5,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          pointerEvents: "none",
-                          opacity: dislikeOpacity,
-                          transition: swipeX === 0 ? "opacity 0.3s ease" : "none",
-                        }}>
-                          <div style={{
-                            width: 76, height: 76, borderRadius: "50%",
-                            background: "rgba(239,68,68,0.12)",
-                            border: "2px solid #EF4444",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                              <path d="M18 6L6 18M6 6l12 12" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round"/>
-                            </svg>
-                          </div>
-                        </div>
-                        <div style={{
-                          position: "absolute", top: 0, left: 0, right: 0, height: 1,
-                          background: "linear-gradient(to right, transparent, rgba(196,163,90,0.35), transparent)",
-                          zIndex: 10,
-                        }} />
-                      </div>
-
-                      {/* BACK — compressed to fit without scrollbar */}
-                      <div style={{
-                        position: "absolute", inset: 0, borderRadius: 28, overflow: "hidden",
-                        backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-                        transform: "rotateY(180deg)",
-                        background: "#0d0d0f",
-                        padding: "22px 22px 18px",
-                        display: "flex", flexDirection: "column",
-                        overflowY: "hidden",
-                      }}>
-                        {/* Header */}
-                        <div style={{ marginBottom: 14 }}>
-                          <p style={{
-                            fontFamily: '"Josefin Sans", sans-serif',
-                            fontWeight: 100, fontSize: 7.5,
-                            letterSpacing: "0.45em", textTransform: "uppercase",
-                            color: C.goldDim, marginBottom: 4, paddingRight: "0.45em",
-                          }}>{perfume.num}</p>
-                          <h2 style={{
-                            fontFamily: '"Playfair Display", serif',
-                            fontSize: "clamp(20px, 6vw, 23px)",
-                            fontWeight: 400, color: C.cream,
-                            letterSpacing: "-0.01em", lineHeight: 1, margin: "0 0 3px",
-                          }}>{perfume.name}</h2>
-                          <p style={{
-                            fontFamily: '"Josefin Sans", sans-serif',
-                            fontWeight: 100, fontSize: 8.5,
-                            letterSpacing: "0.06em", color: "rgba(238,234,226,0.38)",
-                          }}>{perfume.tagline}</p>
-                        </div>
-
-                        <div style={{ height: 1, background: "rgba(238,234,226,0.06)", marginBottom: 14 }} />
-
-                        {/* Composition bars */}
-                        <p style={{
-                          fontFamily: '"Josefin Sans", sans-serif',
-                          fontWeight: 100, fontSize: 7,
-                          letterSpacing: "0.42em", textTransform: "uppercase",
-                          color: "rgba(238,234,226,0.32)", marginBottom: 10, paddingRight: "0.42em",
-                        }}>Composição</p>
-                        <div style={{ marginBottom: 14 }}>
-                          {perfume.scents.map(s => (
-                            <div key={s.name} style={{ marginBottom: 8 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                                <span style={{
-                                  fontFamily: '"Josefin Sans", sans-serif',
-                                  fontWeight: 100, fontSize: 8,
-                                  letterSpacing: "0.18em", textTransform: "uppercase", color: C.dim,
-                                }}>{s.name}</span>
-                                <span style={{
-                                  fontFamily: '"Playfair Display", serif',
-                                  fontWeight: 400, fontSize: 10, color: C.gold,
-                                }}>{s.pct}%</span>
-                              </div>
-                              <div style={{ height: 2, background: "rgba(255,255,255,0.07)", borderRadius: 1, overflow: "hidden" }}>
-                                <div style={{
-                                  height: "100%", width: `${s.pct}%`,
-                                  background: `linear-gradient(to right, rgba(196,163,90,0.4), ${C.gold})`,
-                                  borderRadius: 1,
-                                }} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div style={{ height: 1, background: "rgba(238,234,226,0.06)", marginBottom: 12 }} />
-
-                        {/* Undertones */}
-                        <p style={{
-                          fontFamily: '"Josefin Sans", sans-serif',
-                          fontWeight: 100, fontSize: 7,
-                          letterSpacing: "0.42em", textTransform: "uppercase",
-                          color: "rgba(238,234,226,0.32)", marginBottom: 8, paddingRight: "0.42em",
-                        }}>Notas de fundo</p>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
-                          {perfume.undertones.map(tone => (
-                            <span key={tone} style={{
-                              fontFamily: '"Josefin Sans", sans-serif',
-                              fontWeight: 100, fontSize: 7.5,
-                              letterSpacing: "0.18em", textTransform: "uppercase",
-                              color: C.cream,
-                              border: "1px solid rgba(238,234,226,0.14)",
-                              borderRadius: 20, padding: "4px 10px",
-                              paddingRight: "calc(10px + 0.18em)",
-                            }}>{tone}</span>
-                          ))}
-                        </div>
-
-                        <div style={{ height: 1, background: "rgba(238,234,226,0.06)", marginBottom: 12 }} />
-
-                        {/* Intended + price */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 10 }}>
-                          <p style={{
-                            fontFamily: '"Josefin Sans", sans-serif',
-                            fontWeight: 100, fontSize: 9,
-                            letterSpacing: "0.04em", lineHeight: 1.6,
-                            color: "rgba(238,234,226,0.42)", flex: 1,
-                          }}>{perfume.intended}</p>
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-                            <p style={{
-                              fontFamily: '"Josefin Sans", sans-serif',
-                              fontWeight: 100, fontSize: 6.5,
-                              letterSpacing: "0.35em", textTransform: "uppercase",
-                              color: "rgba(238,234,226,0.28)", marginBottom: 2, paddingRight: "0.35em",
-                            }}>Preço</p>
-                            <div style={{ display: "flex" }}>
-                              {Array.from({ length: 4 }, (_, i) => (
-                                <span key={i} style={{
-                                  fontFamily: '"Playfair Display", serif',
-                                  fontWeight: 400, fontSize: 14,
-                                  color: i < perfume.price ? C.gold : "rgba(238,234,226,0.09)",
-                                }}>$</span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pass / Adoro labels */}
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 6px 0", opacity: 0.4 }}>
-                  <span style={{
-                    fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 8,
-                    letterSpacing: "0.28em", textTransform: "uppercase",
-                    color: "#EF4444", paddingRight: "0.28em",
-                  }}>← Não</span>
-                  <span style={{
-                    fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 8,
-                    letterSpacing: "0.28em", textTransform: "uppercase",
-                    color: "#22C55E", paddingRight: "0.28em",
-                  }}>Adoro →</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ═══ QUIZ COMPLETE ════════════════════════════════════ */}
-          {quizActive && quizIdx >= QUIZ_PERFUMES.length && (
-            <div style={{
-              position: "absolute", inset: 0, zIndex: 30,
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              textAlign: "center", padding: "0 40px",
-              animation: "rise-in 0.6s cubic-bezier(0.16,1,0.3,1) both",
-            }}>
-              <div style={{ width: 28, height: 1, background: C.gold, marginBottom: 28, opacity: 0.65 }} />
-              <h2 style={{
-                fontFamily: '"Playfair Display", serif',
-                fontSize: "clamp(26px, 8vw, 32px)",
-                fontWeight: 400, color: C.cream,
-                lineHeight: 1.25, letterSpacing: "-0.01em", margin: "0 0 16px",
-              }}>Sua seleção está pronta.</h2>
-              <p style={{
-                fontFamily: '"Josefin Sans", sans-serif',
-                fontWeight: 100, fontSize: 8.5,
-                letterSpacing: "0.38em", textTransform: "uppercase",
-                color: C.goldDim, paddingRight: "0.38em",
-              }}>Em breve</p>
             </div>
           )}
 
@@ -1138,6 +728,9 @@ export default function HeroSection() {
         </section>
 
         {renderMenu()}
+
+        {/* Quiz overlay — fixed fullscreen, appears on top of everything */}
+        <QuizOverlay active={quizActive} onClose={() => setQuizActive(false)} />
       </>
     );
   }
