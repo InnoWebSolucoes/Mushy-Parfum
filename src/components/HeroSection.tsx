@@ -59,6 +59,7 @@ const QUIZ_PERFUMES = [
       { name: "Almíscar", pct: 30 },
     ],
     bg: "radial-gradient(ellipse at 60% 40%, #2a1806 0%, #0e0904 100%)",
+    img: "/prod-1.jpg",
   },
   {
     num: "002",
@@ -74,6 +75,7 @@ const QUIZ_PERFUMES = [
       { name: "Almíscar",  pct: 35 },
     ],
     bg: "radial-gradient(ellipse at 40% 60%, #280d14 0%, #0e070a 100%)",
+    img: "/prod-2.jpg",
   },
   {
     num: "003",
@@ -89,6 +91,7 @@ const QUIZ_PERFUMES = [
       { name: "Leite",    pct: 35 },
     ],
     bg: "radial-gradient(ellipse at 55% 35%, #081420 0%, #05090f 100%)",
+    img: "/prod-3.jpg",
   },
   {
     num: "004",
@@ -104,6 +107,7 @@ const QUIZ_PERFUMES = [
       { name: "Rosa",      pct: 25 },
     ],
     bg: "radial-gradient(ellipse at 50% 50%, #1c1c1c 0%, #090909 100%)",
+    img: "/prod-4.jpg",
   },
   {
     num: "005",
@@ -119,6 +123,7 @@ const QUIZ_PERFUMES = [
       { name: "Patchouli",pct: 30 },
     ],
     bg: "radial-gradient(ellipse at 35% 65%, #1a0d22 0%, #0a070f 100%)",
+    img: "/prod-5.jpg",
   },
 ];
 
@@ -161,7 +166,7 @@ export default function HeroSection() {
 
   const quizDragRef     = useRef({ startX: 0, moved: false });
   const swipeXRef       = useRef(0);
-  const carouselDragRef = useRef({ startX: 0, moved: false });
+  const carouselDragRef = useRef({ startX: 0, startY: 0, moved: false });
 
   useEffect(() => { setIsMobile(window.innerWidth < 768); }, []);
 
@@ -309,18 +314,8 @@ export default function HeroSection() {
     return () => clearTimeout(t);
   }, [mUIShown]);
 
-  // ── Mobile: video ended → true last frame + phase transition ─────
+  // ── Mobile: video ended → phase transition (keep 65% frame, no re-capture)
   const handleVideoEnded = useCallback(() => {
-    const video = mVideoRef.current;
-    if (video) {
-      try {
-        const tmp = document.createElement("canvas");
-        tmp.width  = video.videoWidth  || 390;
-        tmp.height = video.videoHeight || 844;
-        tmp.getContext("2d")?.drawImage(video, 0, 0, tmp.width, tmp.height);
-        setLastFrameUrl(tmp.toDataURL("image/jpeg", 0.92));
-      } catch { /* cross-origin guard */ }
-    }
     setMPhase("done");
   }, []);
 
@@ -337,18 +332,25 @@ export default function HeroSection() {
   // ── Carousel drag handlers ────────────────────────────────────────
   const onCarouselDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    carouselDragRef.current = { startX: e.clientX, moved: false };
+    carouselDragRef.current = { startX: e.clientX, startY: e.clientY, moved: false };
   }, []);
 
   const onCarouselMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (Math.abs(e.clientX - carouselDragRef.current.startX) > 8)
-      carouselDragRef.current.moved = true;
+    const dx = Math.abs(e.clientX - carouselDragRef.current.startX);
+    const dy = Math.abs(e.clientY - carouselDragRef.current.startY);
+    if (dx > 8 || dy > 8) carouselDragRef.current.moved = true;
   }, []);
 
   const onCarouselUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const dx = e.clientX - carouselDragRef.current.startX;
-    if (carouselDragRef.current.moved && Math.abs(dx) > 40)
+    const dy = e.clientY - carouselDragRef.current.startY;
+    if (!carouselDragRef.current.moved) return;
+    if (Math.abs(dy) > Math.abs(dx) && dy > 60) {
+      // downward swipe → scroll to gallery
+      window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+    } else if (Math.abs(dx) > 40) {
       setSlideIdx(i => dx < 0 ? Math.min(i + 1, TOTAL_SLIDES - 1) : Math.max(i - 1, 0));
+    }
   }, []);
 
   const onCtaTap = useCallback(() => {
@@ -573,11 +575,13 @@ export default function HeroSection() {
           {/* ═══ CAROUSEL (CTA + 3 collection cards) ═════════════ */}
           {carouselShown && (
             <div style={{
-              position: "absolute", top: "13vh", left: "50%",
-              transform: "translateX(-50%)", zIndex: 30,
+              position: "absolute", top: "13vh", left: "50%", zIndex: 30,
               width: "82vw", maxWidth: 340,
+              transform: cardVisible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(30px)",
+              opacity: cardVisible ? 1 : 0,
+              transition: "opacity 1s ease, transform 1s cubic-bezier(0.16,1,0.3,1)",
             }}>
-              {/* Card shell — simple opacity fade (no scale spring so image stays static) */}
+              {/* Card shell */}
               <div
                 onPointerDown={onCarouselDown}
                 onPointerMove={onCarouselMove}
@@ -591,8 +595,6 @@ export default function HeroSection() {
                     "0 16px 36px rgba(0,0,0,0.7)",
                     "inset 0 1px 0 rgba(255,255,255,0.06)",
                   ].join(", "),
-                  opacity: cardVisible ? 1 : 0,
-                  transition: "opacity 0.8s ease",
                   animation: "card-float 5s ease-in-out 0.9s infinite",
                 }}
               >
@@ -744,6 +746,26 @@ export default function HeroSection() {
                   />
                 ))}
               </div>
+
+              {/* Scroll-down hint */}
+              <button
+                onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+                aria-label="Ver coleção"
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                  marginTop: 22, background: "none", border: "none", cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                <span style={{
+                  fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100, fontSize: 7.5,
+                  letterSpacing: "0.42em", textTransform: "uppercase",
+                  color: "rgba(238,234,226,0.28)", paddingRight: "0.42em",
+                }}>Ver coleção</span>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ opacity: 0.3, animation: "pulse-fade 2.4s ease-in-out infinite" }}>
+                  <path d="M7 1v12M2 8l5 5 5-5" stroke="#EEEAE2" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             </div>
           )}
 
@@ -796,6 +818,7 @@ export default function HeroSection() {
 
                   {/* ── Current card (swipeable + flippable) ───── */}
                   <div
+                    key={quizIdx}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
@@ -828,13 +851,32 @@ export default function HeroSection() {
                         background: perfume.bg,
                         display: "flex", flexDirection: "column", justifyContent: "flex-end",
                       }}>
+                        {/* Product image — contained so bottle shows fully */}
+                        {perfume.img && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={perfume.img}
+                            alt=""
+                            aria-hidden="true"
+                            style={{
+                              position: "absolute",
+                              top: "8%", left: "50%",
+                              transform: "translateX(-50%)",
+                              width: "62%", height: "54%",
+                              objectFit: "contain",
+                              pointerEvents: "none",
+                              opacity: 0.82,
+                              filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.7))",
+                            }}
+                          />
+                        )}
                         <div aria-hidden="true" style={{
                           position: "absolute", inset: 0, pointerEvents: "none",
                           opacity: 0.04, backgroundImage: GRAIN, backgroundSize: "200px 200px",
                         }} />
                         <div style={{
-                          position: "absolute", bottom: 0, left: 0, right: 0, height: "60%",
-                          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)",
+                          position: "absolute", bottom: 0, left: 0, right: 0, height: "55%",
+                          background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
                         }} />
                         <div style={{ position: "relative", zIndex: 1, padding: "0 24px 26px" }}>
                           <p style={{
