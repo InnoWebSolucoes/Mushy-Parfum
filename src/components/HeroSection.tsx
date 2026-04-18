@@ -18,8 +18,28 @@ const C = {
   cream:   "#EEEAE2",
   gold:    "#C4A35A",
   goldDim: "rgba(196,163,90,0.55)",
-  dim:     "rgba(238,234,226,0.38)",
+  dim:     "rgba(238,234,226,0.35)",
 };
+
+// Collection slides for the post-video carousel
+const SLIDES = [
+  {
+    num: "001", name: "Oud Noir",
+    bg: "radial-gradient(ellipse at 60% 40%, #2a1806 0%, #0e0904 100%)",
+  },
+  {
+    num: "002", name: "Amber Rose",
+    bg: "radial-gradient(ellipse at 40% 60%, #280d14 0%, #0e070a 100%)",
+  },
+  {
+    num: "003", name: "Santal",
+    bg: "radial-gradient(ellipse at 55% 35%, #081420 0%, #05090f 100%)",
+  },
+  {
+    num: "004", name: "White Musk",
+    bg: "radial-gradient(ellipse at 50% 50%, #1c1c1c 0%, #090909 100%)",
+  },
+];
 
 type MobilePhase = "intro" | "video" | "done";
 
@@ -43,10 +63,13 @@ export default function HeroSection() {
   const [ready,   setReady]   = useState(false);
 
   // ── Mobile state ──────────────────────────────────────────────────
-  const mVideoRef     = useRef<HTMLVideoElement>(null);
-  const [mPhase,      setMPhase]      = useState<MobilePhase>("intro");
-  const [mIntroShown, setMIntroShown] = useState(false);
-  const [mUIShown,    setMUIShown]    = useState(false);
+  const mVideoRef      = useRef<HTMLVideoElement>(null);
+  const mFrameCanvas   = useRef<HTMLCanvasElement>(null);
+  const [mPhase,       setMPhase]      = useState<MobilePhase>("intro");
+  const [mIntroShown,  setMIntroShown] = useState(false);
+  const [mUIShown,     setMUIShown]    = useState(false);
+  const [cardVisible,  setCardVisible] = useState(false);
+  const [slideIdx,     setSlideIdx]    = useState(0);
 
   useEffect(() => { setIsMobile(window.innerWidth < 768); }, []);
 
@@ -62,7 +85,7 @@ export default function HeroSection() {
     ctx.drawImage(img, (cw - iw * scale) / 2, (ch - ih * scale) / 2, iw * scale, ih * scale);
   }, []);
 
-  // ── Desktop: preload frames ───────────────────────────────────────
+  // ── Desktop: preload ──────────────────────────────────────────────
   useEffect(() => {
     if (isMobile !== false) return;
     const imgs = new Array<HTMLImageElement>(TOTAL_FRAMES);
@@ -103,7 +126,7 @@ export default function HeroSection() {
     return () => window.removeEventListener("resize", resize);
   }, [isMobile, drawFrame]);
 
-  // ── Desktop: intro fade-in ────────────────────────────────────────
+  // ── Desktop: intro fade ───────────────────────────────────────────
   useEffect(() => {
     if (!ready) return;
     const el = dIntroRef.current;
@@ -140,10 +163,10 @@ export default function HeroSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isMobile, ready, drawFrame]);
 
-  // ── Mobile: show intro text ───────────────────────────────────────
+  // ── Mobile: intro text ────────────────────────────────────────────
   useEffect(() => {
     if (isMobile !== true) return;
-    const t = setTimeout(() => setMIntroShown(true), 200);
+    const t = setTimeout(() => setMIntroShown(true), 150);
     return () => clearTimeout(t);
   }, [isMobile]);
 
@@ -178,6 +201,41 @@ export default function HeroSection() {
     return () => video.removeEventListener("timeupdate", check);
   }, [mPhase, mUIShown]);
 
+  // ── Mobile: capture last frame + show card ────────────────────────
+  const handleVideoEnded = useCallback(() => {
+    // Grab the last rendered frame into the offscreen canvas
+    const video  = mVideoRef.current;
+    const canvas = mFrameCanvas.current;
+    if (video && canvas) {
+      try {
+        canvas.width  = video.videoWidth  || 390;
+        canvas.height = video.videoHeight || 844;
+        canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch { /* cross-origin guard */ }
+    }
+    setMPhase("done");
+    // Brief pause so the frame is visible, then animate card in
+    setTimeout(() => setCardVisible(true), 320);
+  }, []);
+
+  // ── Mobile: auto-advance carousel ────────────────────────────────
+  useEffect(() => {
+    if (!cardVisible) return;
+    // Start advancing after the card-form animation settles
+    const first = setTimeout(() => {
+      setSlideIdx(1);
+    }, 2800);
+    return () => clearTimeout(first);
+  }, [cardVisible]);
+
+  useEffect(() => {
+    if (!cardVisible || slideIdx === 0) return;
+    const interval = setInterval(() => {
+      setSlideIdx(i => (i + 1) % SLIDES.length);
+    }, 3400);
+    return () => clearInterval(interval);
+  }, [cardVisible, slideIdx]);
+
   // ── Menu scroll lock ──────────────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -207,47 +265,27 @@ export default function HeroSection() {
         flexDirection: "column",
       }}
     >
-      {/* Subtle grain */}
       <div aria-hidden="true" style={{
         position: "absolute", inset: 0, pointerEvents: "none",
         opacity: 0.025, backgroundImage: GRAIN, backgroundSize: "200px 200px",
       }} />
 
-      {/* Top bar: just the close label */}
-      <div style={{
-        display: "flex",
-        justifyContent: "flex-end",
-        padding: "36px 36px 0",
-        flexShrink: 0,
-      }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", padding: "36px 36px 0", flexShrink: 0 }}>
         <button
           onClick={() => setMenuOpen(false)}
           aria-label="Close menu"
           style={{
             background: "none", border: "none", padding: 0, cursor: "pointer",
             fontFamily: '"Josefin Sans", sans-serif',
-            fontWeight: 100,
-            fontSize: 9,
-            letterSpacing: "0.5em",
-            textTransform: "uppercase",
-            color: C.dim,
-            lineHeight: 1,
-            paddingRight: "0.5em",
+            fontWeight: 100, fontSize: 9, letterSpacing: "0.5em",
+            textTransform: "uppercase", color: C.dim, paddingRight: "0.5em",
           }}
         >
           Close
         </button>
       </div>
 
-      {/* Nav — vertically centered, left-aligned */}
-      <nav style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        padding: "0 40px",
-        gap: 0,
-      }}>
+      <nav style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 40px" }}>
         {["Collections", "About", "Stockists", "Contact"].map((label, i) => (
           <a
             key={label}
@@ -262,7 +300,7 @@ export default function HeroSection() {
               color: C.cream,
               textDecoration: "none",
               lineHeight: 1.22,
-              borderBottom: `1px solid rgba(238,234,226,0.07)`,
+              borderBottom: "1px solid rgba(238,234,226,0.07)",
               padding: "0.22em 0",
               opacity: menuOpen ? 1 : 0,
               transform: menuOpen ? "translateY(0)" : "translateY(20px)",
@@ -274,43 +312,27 @@ export default function HeroSection() {
         ))}
       </nav>
 
-      {/* Footer: year + brand name ultra-small */}
       <div style={{
-        padding: "0 40px 40px",
-        flexShrink: 0,
+        padding: "0 40px 40px", flexShrink: 0,
         opacity: menuOpen ? 1 : 0,
         transition: "opacity 0.5s ease 0.44s",
+        display: "flex", justifyContent: "space-between", alignItems: "flex-end",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <span style={{
-            fontFamily: '"Josefin Sans", sans-serif',
-            fontWeight: 100,
-            fontSize: 8,
-            letterSpacing: "0.38em",
-            textTransform: "uppercase",
-            color: "rgba(238,234,226,0.15)",
-            paddingRight: "0.38em",
-          }}>
-            Mushy Parfum
-          </span>
-          <span style={{
-            fontFamily: '"Josefin Sans", sans-serif',
-            fontWeight: 100,
-            fontSize: 8,
-            letterSpacing: "0.2em",
-            color: "rgba(238,234,226,0.1)",
-          }}>
-            Est. 2024
-          </span>
-        </div>
+        <span style={{
+          fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
+          fontSize: 8, letterSpacing: "0.38em", textTransform: "uppercase",
+          color: "rgba(238,234,226,0.14)", paddingRight: "0.38em",
+        }}>Mushy Parfum</span>
+        <span style={{
+          fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
+          fontSize: 8, letterSpacing: "0.2em", color: "rgba(238,234,226,0.09)",
+        }}>Est. 2024</span>
       </div>
     </div>
   );
 
   // ── Before hydration ──────────────────────────────────────────────
-  if (isMobile === null) {
-    return <div style={{ height: "100svh", background: C.bg }} />;
-  }
+  if (isMobile === null) return <div style={{ height: "100svh", background: C.bg }} />;
 
   // ═══════════════════════════════════════════════════════════════════
   // MOBILE
@@ -322,10 +344,10 @@ export default function HeroSection() {
       <>
         <section style={{ height: "100svh", background: C.bg, position: "relative", overflow: "hidden" }}>
 
-          {/* Grain overlay */}
+          {/* Grain */}
           <div aria-hidden="true" style={{
             position: "absolute", inset: 0, zIndex: 9, pointerEvents: "none",
-            opacity: 0.032, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+            opacity: 0.03, backgroundImage: GRAIN, backgroundSize: "200px 200px",
           }} />
 
           {/* Video */}
@@ -335,13 +357,12 @@ export default function HeroSection() {
             muted
             playsInline
             preload="auto"
-            onEnded={() => setMPhase("done")}
+            onEnded={handleVideoEnded}
             style={{
-              position: "absolute", inset: 0,
-              width: "100%", height: "100%",
+              position: "absolute", inset: 0, width: "100%", height: "100%",
               objectFit: "cover", zIndex: 1,
-              opacity: mPhase !== "intro" ? 1 : 0,
-              transition: "opacity 3.8s ease",
+              opacity: mPhase === "intro" ? 0 : mPhase === "done" ? 0 : 1,
+              transition: mPhase === "done" ? "opacity 1.4s ease" : "opacity 3.8s ease",
             }}
           />
 
@@ -352,30 +373,27 @@ export default function HeroSection() {
             transition: "opacity 3.8s ease",
             background: [
               "linear-gradient(to bottom, rgba(9,9,11,0.55) 0%, transparent 25%)",
-              "linear-gradient(to top,    rgba(9,9,11,0.65) 0%, transparent 30%)",
+              "linear-gradient(to top,    rgba(9,9,11,0.7) 0%, transparent 30%)",
             ].join(","),
           }} />
 
-          {/* ═══ INTRO ════════════════════════════════════════════════ */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 10,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              padding: "0 36px",
-              paddingBottom: "8vh",
-              pointerEvents: "none",
-              opacity: mPhase === "intro" ? (mIntroShown ? 1 : 0) : 0,
+          {/* ═══ INTRO ════════════════════════════════════════════ */}
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 10,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            textAlign: "center",
+            pointerEvents: "none",
+            paddingBottom: "6vh",
+          }}>
+            {/* Title block — animates as one unit */}
+            <div style={{
+              opacity: mPhase === "intro" && mIntroShown ? 1 : 0,
+              transform: mPhase === "intro" && mIntroShown ? "translateY(0)" : "translateY(16px)",
               transition: mPhase !== "intro"
-                ? "opacity 0.6s ease"
-                : "opacity 1.8s ease",
-            }}
-          >
-            {/* Brand name — Playfair Display, the whole block fades as one unit */}
-            <div>
+                ? "opacity 0.55s ease, transform 0.55s ease"
+                : "opacity 1.5s ease 0.15s, transform 1.2s cubic-bezier(0.16,1,0.3,1) 0.15s",
+            }}>
               <h1 style={{
                 fontFamily: '"Playfair Display", serif',
                 fontSize: "clamp(72px, 22vw, 96px)",
@@ -391,74 +409,201 @@ export default function HeroSection() {
                 fontFamily: '"Josefin Sans", sans-serif',
                 fontWeight: 100,
                 fontSize: "clamp(11px, 3.2vw, 15px)",
-                letterSpacing: "0.68em",
+                letterSpacing: "0.72em",
                 textTransform: "uppercase",
                 color: C.goldDim,
-                margin: "18px 0 0 4px",
-                paddingRight: "0.68em",
+                margin: "16px 0 0",
+                paddingRight: "0.72em",
                 lineHeight: 1,
               }}>
                 Parfum
               </p>
             </div>
 
-            {/* Scroll hint — absolute, bottom of intro container */}
+            {/* Scroll cue */}
             <div style={{
-              position: "absolute",
-              bottom: "9vh",
-              left: "50%",
-              transform: "translateX(-50%)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 8,
+              position: "absolute", bottom: "9vh", left: "50%", transform: "translateX(-50%)",
+              opacity: mPhase === "intro" && mIntroShown ? 1 : 0,
+              transition: "opacity 1.4s ease 0.9s",
             }}>
               <div style={{
-                width: 1,
-                height: 44,
+                width: 1, height: 44, margin: "0 auto",
                 background: `linear-gradient(to bottom, ${C.goldDim}, transparent)`,
                 animation: "pulse-line 2.6s ease-in-out infinite",
               }} />
             </div>
           </div>
 
-          {/* ═══ POST-VIDEO CHROME ════════════════════════════════════ */}
+          {/* ═══ POST-VIDEO CARD CAROUSEL ═══════════════════════ */}
 
-          {/* Logo — top left */}
+          {/* Offscreen canvas to hold the last video frame */}
+          <canvas ref={mFrameCanvas} style={{ display: "none" }} />
+
+          {/* Card wrapper — appears when video ends */}
+          {mPhase === "done" && (
+            <div style={{
+              position: "absolute",
+              top: "13vh",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 30,
+              width: "82vw",
+              maxWidth: 340,
+            }}>
+              {/* The card itself */}
+              <div style={{
+                width: "100%",
+                height: "63vh",
+                maxHeight: 510,
+                borderRadius: 28,
+                overflow: "hidden",
+                boxShadow: [
+                  "0 40px 90px rgba(0,0,0,0.9)",
+                  "0 16px 36px rgba(0,0,0,0.7)",
+                  "inset 0 1px 0 rgba(255,255,255,0.06)",
+                ].join(", "),
+                animation: cardVisible
+                  ? "card-form 0.75s cubic-bezier(0.16,1,0.3,1) forwards, card-float 5s ease-in-out 0.75s infinite"
+                  : "none",
+                opacity: cardVisible ? 1 : 0,
+                position: "relative",
+              }}>
+                {/* Canvas: last captured video frame — shown first, fades out when carousel advances */}
+                <canvas
+                  ref={mFrameCanvas}
+                  style={{
+                    position: "absolute", inset: 0,
+                    width: "100%", height: "100%",
+                    objectFit: "cover",
+                    opacity: slideIdx === 0 ? 1 : 0,
+                    transition: "opacity 0.8s ease",
+                    zIndex: 1,
+                  }}
+                />
+
+                {/* Carousel strip */}
+                <div style={{
+                  display: "flex",
+                  width: `${SLIDES.length * 100}%`,
+                  height: "100%",
+                  transform: `translateX(${(-slideIdx / SLIDES.length) * 100}%)`,
+                  transition: "transform 0.72s cubic-bezier(0.76,0,0.24,1)",
+                  position: "relative", zIndex: 2,
+                }}>
+                  {SLIDES.map((slide, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: `${100 / SLIDES.length}%`,
+                        flexShrink: 0,
+                        height: "100%",
+                        background: slide.bg,
+                        position: "relative",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {/* Grain on each slide */}
+                      <div aria-hidden="true" style={{
+                        position: "absolute", inset: 0, pointerEvents: "none",
+                        opacity: 0.04, backgroundImage: GRAIN, backgroundSize: "200px 200px",
+                      }} />
+
+                      {/* Bottom gradient */}
+                      <div style={{
+                        position: "absolute", bottom: 0, left: 0, right: 0, height: "55%",
+                        background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)",
+                      }} />
+
+                      {/* Slide text */}
+                      <div style={{ position: "relative", zIndex: 1, padding: "0 24px 28px" }}>
+                        <p style={{
+                          fontFamily: '"Josefin Sans", sans-serif',
+                          fontWeight: 100, fontSize: 8,
+                          letterSpacing: "0.45em", textTransform: "uppercase",
+                          color: C.goldDim, marginBottom: 8, paddingRight: "0.45em",
+                        }}>
+                          {slide.num}
+                        </p>
+                        <h2 style={{
+                          fontFamily: '"Playfair Display", serif',
+                          fontSize: "clamp(24px, 7vw, 30px)",
+                          fontWeight: 400,
+                          color: C.cream,
+                          letterSpacing: "-0.01em",
+                          lineHeight: 1,
+                          margin: 0,
+                        }}>
+                          {slide.name}
+                        </h2>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Thin gold top edge line */}
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0, height: 1,
+                  background: "linear-gradient(to right, transparent, rgba(196,163,90,0.35), transparent)",
+                  zIndex: 10,
+                }} />
+              </div>
+
+              {/* Dot indicators */}
+              <div style={{
+                display: "flex", justifyContent: "center", alignItems: "center",
+                gap: 8, marginTop: 18,
+                opacity: cardVisible ? 1 : 0,
+                transition: "opacity 0.6s ease 0.5s",
+              }}>
+                {SLIDES.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSlideIdx(i)}
+                    aria-label={`Go to slide ${i + 1}`}
+                    style={{
+                      width: i === slideIdx ? 22 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      background: i === slideIdx ? C.gold : "rgba(238,234,226,0.2)",
+                      transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ CHROME (logo + hamburger) ══════════════════════ */}
+
           <div style={{
-            position: "absolute", top: 28, left: 28, zIndex: 50,
+            position: "absolute", top: 26, left: 26, zIndex: 50,
             opacity: uiVisible ? 1 : 0,
             transition: "opacity 1.6s ease",
             pointerEvents: "none",
           }}>
-            <Image
-              src="/logo.jpeg"
-              alt="Mushy Parfum"
-              width={34}
-              height={34}
-              className="rounded"
-              style={{ opacity: 0.92 }}
-            />
+            <Image src="/logo.jpeg" alt="Mushy Parfum" width={34} height={34} className="rounded" style={{ opacity: 0.92 }} />
           </div>
 
-          {/* Hamburger — top right, bare */}
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             style={{
-              position: "absolute", top: 32, right: 30, zIndex: 50,
+              position: "absolute", top: 30, right: 28, zIndex: 50,
               opacity: uiVisible ? 1 : 0,
               pointerEvents: uiVisible ? "auto" : "none",
               transition: "opacity 1.6s ease",
               background: "none", border: "none", padding: 0, cursor: "pointer",
-              display: "flex", flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 6,
+              display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6,
             }}
           >
-            <span style={{ display: "block", width: 24, height: 1, background: C.cream, opacity: 0.7 }} />
-            <span style={{ display: "block", width: 16, height: 1, background: C.cream, opacity: 0.7 }} />
-            <span style={{ display: "block", width: 24, height: 1, background: C.cream, opacity: 0.7 }} />
+            <span style={{ display: "block", width: 24, height: 1, background: C.cream, opacity: 0.65 }} />
+            <span style={{ display: "block", width: 16, height: 1, background: C.cream, opacity: 0.65 }} />
+            <span style={{ display: "block", width: 24, height: 1, background: C.cream, opacity: 0.65 }} />
           </button>
 
         </section>
@@ -469,29 +614,20 @@ export default function HeroSection() {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // DESKTOP — scroll-driven frame animation (unchanged)
+  // DESKTOP — scroll-driven frame animation
   // ═══════════════════════════════════════════════════════════════════
   return (
     <>
       <section ref={heroRef} style={{ height: "500vh" }} className="relative">
         <div className="sticky top-0 overflow-hidden" style={{ height: "100svh" }}>
 
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0"
-            style={{ width: "100%", height: "100%", display: "block" }}
-          />
+          <canvas ref={canvasRef} className="absolute inset-0" style={{ width: "100%", height: "100%", display: "block" }} />
 
-          {/* Loading overlay */}
-          <div
-            className="absolute inset-0 z-40 flex flex-col items-center justify-center"
-            style={{
-              background: "#080808",
-              opacity: ready ? 0 : 1,
-              pointerEvents: ready ? "none" : "auto",
-              transition: "opacity 0.8s ease",
-            }}
-          >
+          {/* Loading */}
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center" style={{
+            background: "#080808", opacity: ready ? 0 : 1,
+            pointerEvents: ready ? "none" : "auto", transition: "opacity 0.8s ease",
+          }}>
             <div className="relative overflow-hidden" style={{ width: 140, height: 1, background: "rgba(196,163,90,0.18)" }}>
               <div style={{ position: "absolute", inset: 0, background: C.gold, transform: `scaleX(${loadPct / 100})`, transformOrigin: "left", transition: "transform 0.2s ease" }} />
             </div>
@@ -510,36 +646,28 @@ export default function HeroSection() {
             ].join(","),
           }} />
 
-          {/* Desktop intro text */}
-          <div
-            ref={dIntroRef}
-            className="absolute inset-0 z-20 pointer-events-none"
-            style={{ opacity: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 8vw" }}
-          >
+          {/* Desktop intro */}
+          <div ref={dIntroRef} className="absolute inset-0 z-20 pointer-events-none" style={{
+            opacity: 0, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", textAlign: "center",
+          }}>
             <h1 style={{
               fontFamily: '"Playfair Display", serif',
               fontSize: "clamp(56px, 8vw, 90px)",
-              fontWeight: 700,
-              color: C.cream,
-              letterSpacing: "-0.025em",
-              lineHeight: 0.9,
-              margin: 0,
+              fontWeight: 700, color: C.cream,
+              letterSpacing: "-0.025em", lineHeight: 0.9, margin: 0,
             }}>
               Mushy
             </h1>
             <p style={{
-              fontFamily: '"Josefin Sans", sans-serif',
-              fontWeight: 100,
-              fontSize: "clamp(10px, 1.1vw, 14px)",
-              letterSpacing: "0.65em",
-              textTransform: "uppercase",
-              color: C.goldDim,
-              margin: "20px 0 0 4px",
-              paddingRight: "0.65em",
+              fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
+              fontSize: "clamp(10px, 1.1vw, 14px)", letterSpacing: "0.65em",
+              textTransform: "uppercase", color: C.goldDim,
+              margin: "20px 0 0", paddingRight: "0.65em",
             }}>
               Parfum
             </p>
-            <div style={{ marginTop: "3.5rem", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.6rem" }}>
+            <div style={{ marginTop: "3rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem" }}>
               <span style={{
                 fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
                 fontSize: 9, letterSpacing: "0.45em", textTransform: "uppercase",
@@ -556,12 +684,12 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Desktop: Logo */}
+          {/* Desktop logo */}
           <div ref={dLogoRef} className="absolute top-6 left-6 z-50 pointer-events-none" style={{ opacity: 0, transition: "opacity 0.5s ease" }}>
             <Image src="/logo.jpeg" alt="Mushy Parfum" width={40} height={40} className="rounded" />
           </div>
 
-          {/* Desktop: menu button */}
+          {/* Desktop menu button */}
           <button
             ref={dMenuBtnRef}
             onClick={() => setMenuOpen(true)}
@@ -578,7 +706,7 @@ export default function HeroSection() {
             <span style={{ display: "block", width: 26, height: 1, background: C.cream, opacity: 0.65 }} />
           </button>
 
-          {/* Desktop: see more */}
+          {/* Desktop see more */}
           <button
             ref={dSeeMoreRef}
             onClick={scrollToContent}
@@ -594,8 +722,7 @@ export default function HeroSection() {
               fontFamily: '"Josefin Sans", sans-serif', fontWeight: 100,
               fontSize: 9, letterSpacing: "0.45em", textTransform: "uppercase",
               color: C.cream, paddingRight: "0.45em",
-              textShadow: "0 1px 16px rgba(0,0,0,0.9)",
-              whiteSpace: "nowrap",
+              textShadow: "0 1px 16px rgba(0,0,0,0.9)", whiteSpace: "nowrap",
             }}>
               See more
             </span>

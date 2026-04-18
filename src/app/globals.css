@@ -7,9 +7,7 @@
   padding: 0;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   background: #09090B;
@@ -26,16 +24,30 @@ body {
 .font-josefin   { font-family: "Josefin Sans", sans-serif; }
 
 @keyframes pulse-line {
-  0%, 100% { opacity: 0.5; transform: scaleY(1); }
-  50%       { opacity: 0.9; transform: scaleY(1.12); }
+  0%, 100% { opacity: 0.45; transform: scaleY(1); }
+  50%       { opacity: 0.9;  transform: scaleY(1.1); }
 }
 
 @keyframes pulse-fade {
-  0%, 100% { opacity: 0.28; }
-  50%       { opacity: 0.65; }
+  0%, 100% { opacity: 0.25; }
+  50%       { opacity: 0.6; }
 }
 
-@keyframes drift-up {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-4px); }
+/* Card formation: spring overshoot */
+@keyframes card-form {
+  0%   { transform: scale(0.88); opacity: 0; }
+  60%  { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* Gentle perpetual float */
+@keyframes card-float {
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-7px); }
+}
+
+/* Slide text rise on intro */
+@keyframes rise-in {
+  0%   { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
