@@ -237,18 +237,16 @@ export default function HeroSection() {
     mVideoRef.current?.play().catch(() => {});
   }, [mPhase]);
 
-  // ── Mobile: chrome at 65% + frame capture at 92% ─────────────────
+  // ── Mobile: chrome at 65% — capture frame immediately so card isn't blank
   useEffect(() => {
     if (mPhase !== "video") return;
     const video = mVideoRef.current;
     if (!video) return;
-    let frameCaptured = false;
     const check = () => {
       if (!video.duration) return;
-      const pct = video.currentTime / video.duration;
-      if (!mUIShown && pct >= 0.65) setMUIShown(true);
-      if (!frameCaptured && pct >= 0.92) {
-        frameCaptured = true;
+      if (!mUIShown && video.currentTime / video.duration >= 0.65) {
+        setMUIShown(true);
+        // Capture the current frame right now so the card never appears blank
         try {
           const tmp = document.createElement("canvas");
           tmp.width  = video.videoWidth  || 390;
@@ -269,8 +267,18 @@ export default function HeroSection() {
     return () => clearTimeout(t);
   }, [mUIShown]);
 
-  // ── Mobile: video ended → just transition phase ───────────────────
+  // ── Mobile: video ended → update to true last frame + transition ──
   const handleVideoEnded = useCallback(() => {
+    const video = mVideoRef.current;
+    if (video) {
+      try {
+        const tmp = document.createElement("canvas");
+        tmp.width  = video.videoWidth  || 390;
+        tmp.height = video.videoHeight || 844;
+        tmp.getContext("2d")?.drawImage(video, 0, 0, tmp.width, tmp.height);
+        setLastFrameUrl(tmp.toDataURL("image/jpeg", 0.92));
+      } catch { /* cross-origin guard */ }
+    }
     setMPhase("done");
   }, []);
 
@@ -710,12 +718,14 @@ export default function HeroSection() {
                 }}>Swipe on your preferences</p>
               </div>
 
+              {/* Centering wrapper — never gets animation transform applied to it */}
               <div style={{
                 position: "absolute", top: "19vh", left: "50%",
                 transform: "translateX(-50%)", zIndex: 30,
                 width: "82vw", maxWidth: 340,
-                animation: "rise-in 0.5s cubic-bezier(0.16,1,0.3,1) both",
               }}>
+              {/* Inner animation wrapper — rise-in only affects translateY, not the centering */}
+              <div style={{ animation: "rise-in 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
                 <div
                   onPointerDown={onPointerDown}
                   onPointerMove={onPointerMove}
@@ -832,98 +842,130 @@ export default function HeroSection() {
                       backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
                       background: "#0d0d0f",
-                      padding: "26px 22px 22px",
-                      display: "flex", flexDirection: "column", gap: 18,
+                      padding: "28px 26px 24px",
+                      display: "flex", flexDirection: "column",
                       overflowY: "auto",
                     }}>
-                      <div>
+                      {/* Header */}
+                      <div style={{ marginBottom: 20 }}>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
-                          fontWeight: 100, fontSize: 7.5,
+                          fontWeight: 100, fontSize: 8,
                           letterSpacing: "0.45em", textTransform: "uppercase",
-                          color: C.goldDim, marginBottom: 5, paddingRight: "0.45em",
+                          color: C.goldDim, marginBottom: 6, paddingRight: "0.45em",
                         }}>{perfume.num}</p>
                         <h2 style={{
                           fontFamily: '"Playfair Display", serif',
-                          fontSize: "clamp(20px, 6vw, 24px)",
+                          fontSize: "clamp(22px, 6.5vw, 26px)",
                           fontWeight: 400, color: C.cream,
-                          letterSpacing: "-0.01em", lineHeight: 1, margin: 0,
+                          letterSpacing: "-0.01em", lineHeight: 1, margin: "0 0 4px",
                         }}>{perfume.name}</h2>
+                        <p style={{
+                          fontFamily: '"Josefin Sans", sans-serif',
+                          fontWeight: 100, fontSize: 9,
+                          letterSpacing: "0.08em", color: "rgba(238,234,226,0.4)",
+                        }}>{perfume.tagline}</p>
                       </div>
-                      <div>
+
+                      {/* Divider */}
+                      <div style={{ height: 1, background: "rgba(238,234,226,0.06)", marginBottom: 18 }} />
+
+                      {/* Scent composition */}
+                      <div style={{ marginBottom: 20 }}>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
                           fontWeight: 100, fontSize: 7.5,
-                          letterSpacing: "0.38em", textTransform: "uppercase",
-                          color: "rgba(238,234,226,0.28)", marginBottom: 11, paddingRight: "0.38em",
+                          letterSpacing: "0.42em", textTransform: "uppercase",
+                          color: "rgba(238,234,226,0.35)", marginBottom: 14, paddingRight: "0.42em",
                         }}>Composition</p>
                         {perfume.scents.map(s => (
-                          <div key={s.name} style={{ marginBottom: 9 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <div key={s.name} style={{ marginBottom: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                               <span style={{
                                 fontFamily: '"Josefin Sans", sans-serif',
-                                fontWeight: 100, fontSize: 8,
-                                letterSpacing: "0.22em", textTransform: "uppercase", color: C.dim,
+                                fontWeight: 100, fontSize: 9,
+                                letterSpacing: "0.2em", textTransform: "uppercase", color: C.dim,
                               }}>{s.name}</span>
                               <span style={{
-                                fontFamily: '"Josefin Sans", sans-serif',
-                                fontWeight: 100, fontSize: 8, color: C.goldDim,
+                                fontFamily: '"Playfair Display", serif',
+                                fontWeight: 400, fontSize: 11,
+                                color: C.gold, letterSpacing: "0.02em",
                               }}>{s.pct}%</span>
                             </div>
-                            <div style={{ height: 2, background: "rgba(255,255,255,0.07)", borderRadius: 1, overflow: "hidden" }}>
+                            <div style={{ height: 3, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
                               <div style={{
                                 height: "100%", width: `${s.pct}%`,
-                                background: `linear-gradient(to right, ${C.goldDim}, ${C.gold})`,
-                                borderRadius: 1,
+                                background: `linear-gradient(to right, rgba(196,163,90,0.4), ${C.gold})`,
+                                borderRadius: 2,
                               }} />
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div>
+
+                      {/* Divider */}
+                      <div style={{ height: 1, background: "rgba(238,234,226,0.06)", marginBottom: 18 }} />
+
+                      {/* Undertones */}
+                      <div style={{ marginBottom: 20 }}>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
                           fontWeight: 100, fontSize: 7.5,
-                          letterSpacing: "0.38em", textTransform: "uppercase",
-                          color: "rgba(238,234,226,0.28)", marginBottom: 9, paddingRight: "0.38em",
+                          letterSpacing: "0.42em", textTransform: "uppercase",
+                          color: "rgba(238,234,226,0.35)", marginBottom: 12, paddingRight: "0.42em",
                         }}>Undertones</p>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                           {perfume.undertones.map(tone => (
                             <span key={tone} style={{
                               fontFamily: '"Josefin Sans", sans-serif',
-                              fontWeight: 100, fontSize: 7.5,
-                              letterSpacing: "0.22em", textTransform: "uppercase",
+                              fontWeight: 100, fontSize: 8,
+                              letterSpacing: "0.2em", textTransform: "uppercase",
                               color: C.cream,
-                              border: "1px solid rgba(238,234,226,0.13)",
-                              borderRadius: 20, padding: "4px 10px",
-                              paddingRight: "calc(10px + 0.22em)",
+                              border: "1px solid rgba(238,234,226,0.16)",
+                              borderRadius: 20, padding: "5px 13px",
+                              paddingRight: "calc(13px + 0.2em)",
                             }}>{tone}</span>
                           ))}
                         </div>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+
+                      {/* Divider */}
+                      <div style={{ height: 1, background: "rgba(238,234,226,0.06)", marginBottom: 18 }} />
+
+                      {/* Intended use + price */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                         <p style={{
                           fontFamily: '"Josefin Sans", sans-serif',
-                          fontWeight: 100, fontSize: 9.5,
-                          letterSpacing: "0.04em", lineHeight: 1.65,
-                          color: "rgba(238,234,226,0.45)",
+                          fontWeight: 100, fontSize: 10,
+                          letterSpacing: "0.04em", lineHeight: 1.7,
+                          color: "rgba(238,234,226,0.5)", flex: 1,
                         }}>{perfume.intended}</p>
-                        <div style={{ display: "flex", gap: 2 }}>
-                          {Array.from({ length: 4 }, (_, i) => (
-                            <span key={i} style={{
-                              fontFamily: '"Josefin Sans", sans-serif',
-                              fontWeight: 100, fontSize: 13,
-                              color: i < perfume.price ? C.gold : "rgba(238,234,226,0.1)",
-                            }}>$</span>
-                          ))}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                          <p style={{
+                            fontFamily: '"Josefin Sans", sans-serif',
+                            fontWeight: 100, fontSize: 7,
+                            letterSpacing: "0.35em", textTransform: "uppercase",
+                            color: "rgba(238,234,226,0.28)", paddingRight: "0.35em",
+                          }}>Price</p>
+                          <div style={{ display: "flex", gap: 1 }}>
+                            {Array.from({ length: 4 }, (_, i) => (
+                              <span key={i} style={{
+                                fontFamily: '"Playfair Display", serif',
+                                fontWeight: 400, fontSize: 15,
+                                color: i < perfume.price ? C.gold : "rgba(238,234,226,0.09)",
+                              }}>$</span>
+                            ))}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Flip hint */}
                       <p style={{
                         fontFamily: '"Josefin Sans", sans-serif',
                         fontWeight: 100, fontSize: 7.5,
-                        letterSpacing: "0.28em", textTransform: "uppercase",
-                        color: "rgba(238,234,226,0.16)", textAlign: "center",
-                        paddingRight: "0.28em", marginTop: "auto",
+                        letterSpacing: "0.3em", textTransform: "uppercase",
+                        color: "rgba(238,234,226,0.14)", textAlign: "center",
+                        paddingRight: "0.3em", marginTop: "auto", paddingTop: 16,
                       }}>Tap to flip back</p>
                     </div>
                   </div>
@@ -941,7 +983,8 @@ export default function HeroSection() {
                     color: "#22C55E", paddingRight: "0.28em",
                   }}>Love →</span>
                 </div>
-              </div>
+              </div>{/* end animation wrapper */}
+              </div>{/* end centering wrapper */}
             </>
           )}
 
